@@ -102,7 +102,8 @@ function setupTitleEvents() {
   if (btnCreate) {
     btnCreate.onclick = () => {
       const playerName = getPlayerName();
-      socket.emit('create_room', { playerName }, (response) => {
+      const myCards = getMyCards();
+      socket.emit('create_room', { playerName, deckSize: myCards.length }, (response) => {
         if (response.roomId) {
           currentRoomId = response.roomId;
           console.log("Room Created:", currentRoomId);
@@ -131,8 +132,9 @@ function setupTitleEvents() {
     btnJoin.onclick = () => {
       const roomId = inputRoom.value;
       const playerName = getPlayerName();
+      const myCards = getMyCards();
       if (!roomId) return alert("ルームIDを入力してください");
-      socket.emit('join_room', { roomId, playerName }, (response) => {
+      socket.emit('join_room', { roomId, playerName, deckSize: myCards.length }, (response) => {
         if (response.error) {
           alert("エラー: " + response.error);
         } else {
@@ -168,8 +170,7 @@ function setupLobbyEvents() {
   const btnStart = document.getElementById('btn-start-game');
   if (btnStart) {
     btnStart.onclick = () => {
-      const myDeck = getMyCards();
-      socket.emit('start_game', { roomId: currentRoomId, deckSize: myDeck.length });
+      socket.emit('start_game', { roomId: currentRoomId });
     };
   }
 }
@@ -191,7 +192,12 @@ socket.on('player_joined', (data) => {
 
 socket.on('game_started', (gameState) => {
   console.log("Game Started!", gameState);
-  battleLogs.length = 0; // Reset logs for new game
+  // Total Reset for New Game
+  battleLogs.length = 0;
+  localUsedTypes = [];
+  lastGameState = null;
+  isActing = false;
+
   renderBattle(gameState);
 });
 
@@ -216,10 +222,25 @@ window.endTurn = () => {
 socket.on('game_over', (data) => {
   const isWinner = data.winnerId === socket.id;
   saveWinLoss(isWinner ? 'win' : 'loss');
-  alert(isWinner ? "勝利しました！" : "敗北...");
-  battleLogs.length = 0; // Clear logs for next game
-  goToHome();
+  showGameOver(isWinner ? 'win' : 'lose');
 });
+
+function showGameOver(result) {
+  const overlay = document.createElement('div');
+  overlay.className = `game-over-overlay result-${result}`;
+  overlay.innerHTML = `
+    <div class="game-over-title">${result === 'win' ? 'VICTORY' : 'DEFEAT'}</div>
+    <div class="game-over-subtitle">自動的にホームへ戻ります...</div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Auto home after 4 seconds
+  setTimeout(() => {
+    overlay.remove();
+    battleLogs.length = 0;
+    goToHome();
+  }, 4000);
+}
 
 const battleLogs = [];
 

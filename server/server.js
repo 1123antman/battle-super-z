@@ -37,7 +37,14 @@ io.on('connection', (socket) => {
         }
         const playerName = data.playerName || '名無し';
         const roomId = RoomManager.createRoom(socket.id, playerName);
+        const room = RoomManager.rooms.get(roomId); // Get the created room object
         socket.join(roomId);
+
+        // Store deck size if provided
+        if (data.deckSize !== undefined) {
+            if (!room.playerDeckSizes) room.playerDeckSizes = {};
+            room.playerDeckSizes[socket.id] = data.deckSize;
+        }
 
         if (typeof callback === 'function') {
             callback({ roomId });
@@ -60,6 +67,13 @@ io.on('connection', (socket) => {
         if (result.error) {
             if (typeof callback === 'function') callback({ error: result.error });
         } else {
+            const room = RoomManager.rooms.get(roomId); // Get the room object after joining
+            // Store deck size if provided
+            if (data.deckSize !== undefined) {
+                if (!room.playerDeckSizes) room.playerDeckSizes = {};
+                room.playerDeckSizes[socket.id] = data.deckSize;
+            }
+
             socket.join(roomId);
             if (typeof callback === 'function') callback({ success: true, room: result.room });
             io.to(roomId).emit('player_joined', {
@@ -78,11 +92,11 @@ io.on('connection', (socket) => {
         if (!result) return;
         const { roomId, room } = result;
 
-        // Store deck size if provided
-        if (data.deckSize !== undefined) {
-            if (!room.playerDeckSizes) room.playerDeckSizes = {};
-            room.playerDeckSizes[socket.id] = data.deckSize;
-        }
+        // Reset per-game data in room object
+        // room.playerDeckSizes is now set during create/join, so no need to reset here
+        // if (data.deckSize !== undefined) {
+        //     room.playerDeckSizes[socket.id] = data.deckSize;
+        // }
 
         const gameState = GameLogic.initializeGame(room);
         io.to(roomId).emit('game_started', gameState);
