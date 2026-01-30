@@ -330,10 +330,6 @@ function renderCardCreator() {
             <small>※未入力時はパワーに応じて自動計算されます</small>
           </div>
           <div class="input-group">
-            <label>エネルギーコスト</label>
-            <input type="number" id="card-cost" value="2" min="1" max="10" oninput="updatePreview()">
-          </div>
-          <div class="input-group">
              <label>演出エフェクト</label>
              <select id="card-vfx" onchange="updatePreview()">
                <option value="default">標準</option>
@@ -410,11 +406,16 @@ window.updatePreview = () => {
 
   // Background
   ctx.fillStyle = '#1a1a24';
-  if (element === 'fire') ctx.fillStyle = '#3a1a1a';
-  if (element === 'water') ctx.fillStyle = '#1a2e3a';
-  if (element === 'wood') ctx.fillStyle = '#1a3a1a';
-  else if (effect === 'attack') ctx.fillStyle = '#331111';
-  else if (effect === 'heal') ctx.fillStyle = '#113311';
+  let bgApplied = false;
+  if (element === 'fire') { ctx.fillStyle = '#3a1a1a'; bgApplied = true; }
+  else if (element === 'water') { ctx.fillStyle = '#1a2e3a'; bgApplied = true; }
+  else if (element === 'wood') { ctx.fillStyle = '#1a3a1a'; bgApplied = true; }
+
+  if (!bgApplied) {
+    if (effect === 'attack') ctx.fillStyle = '#331111';
+    else if (effect === 'heal') ctx.fillStyle = '#113311';
+    else if (effect === 'defense') ctx.fillStyle = '#111133';
+  }
   ctx.fillRect(0, 0, 200, 300);
 
   // Frame based on choice
@@ -456,7 +457,8 @@ window.saveCustomCard = () => {
   let power = parseInt(document.getElementById('card-power').value) || 0;
   if (power > 20) power = 20;
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
-
+  const element = document.getElementById('card-element').value;
+  const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
 
@@ -471,7 +473,7 @@ window.saveCustomCard = () => {
     cost: cost,
     frame: frame,
     vfx: vfx,
-    target: effect === 'attack' ? 'enemy' : 'self',
+    target: (effect === 'attack' || effect === 'special') ? 'enemy' : 'self',
     image: imageData,
     isCustom: true
   };
