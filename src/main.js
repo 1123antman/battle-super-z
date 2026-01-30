@@ -58,6 +58,7 @@ window.goToHome = (confirmRequired = false) => {
   }
   currentRoomId = null;
   localUsedTypes = [];
+  battleLogs.length = 0; // Clear logs when returning home
   showView('title');
 };
 
@@ -213,6 +214,7 @@ socket.on('game_over', (data) => {
   const isWinner = data.winnerId === myPlayerId;
   saveWinLoss(isWinner ? 'win' : 'loss');
   alert(isWinner ? "勝利しました！" : "敗北...");
+  battleLogs.length = 0; // Clear logs for next game
   goToHome();
 });
 

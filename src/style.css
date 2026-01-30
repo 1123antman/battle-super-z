@@ -256,6 +256,60 @@ option {
     background: #33ff33;
 }
 
+.summon-field {
+    margin-top: 10px;
+    min-height: 100px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #555;
+}
+
+.summoned-unit {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.unit-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid var(--accent-color);
+    margin-bottom: 5px;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.unit-info {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: #eee;
+}
+
+.empty-field {
+    font-size: 0.7rem;
+    color: #555;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .my-area {
     display: flex;
     flex-direction: column;
