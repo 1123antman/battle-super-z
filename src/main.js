@@ -168,7 +168,8 @@ function setupLobbyEvents() {
   const btnStart = document.getElementById('btn-start-game');
   if (btnStart) {
     btnStart.onclick = () => {
-      socket.emit('start_game', { roomId: currentRoomId });
+      const myDeck = getMyCards();
+      socket.emit('start_game', { roomId: currentRoomId, deckSize: myDeck.length });
     };
   }
 }
@@ -462,8 +463,8 @@ function renderDeckEditor() {
 
   const html = `
     <div class="deck-editor-container">
-      <h2>デッキ編成 (最大10枚)</h2>
-      <p style="color: #aaa; margin-bottom: 20px;">デッキ内のカードは戦闘中に一度だけ使用可能です。<br>
+      <h2>デッキ編成</h2>
+      <p style="color: #aaa; margin-bottom: 20px;">制約: 最大10枚 かつ 合計コスト50以下<br>
       基本の「攻撃・シールド・回復」は何度でも使えます。</p>
       <div class="deck-editor-layout">
         <div class="available-cards card-list-section">
@@ -482,10 +483,12 @@ function renderDeckEditor() {
         </div>
         <div class="current-deck card-list-section">
           <h3>現在のデッキ (<span id="deck-count">${currentDeck.length}</span> / 10)</h3>
+          <p>合計コスト: <span id="deck-total-cost" style="color: ${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0) > 50 ? '#ff3333' : '#33ff33'}">${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0)}</span> / 50</p>
           <div id="deck-grid" class="card-grid">
             ${currentDeck.map((card, idx) => `
               <div class="editor-card deck-card" onclick="removeFromDeck(${idx})">
                 <div class="card-name">${card.name}</div>
+                <div class="card-info">Cost: ${card.cost}</div>
               </div>
             `).join('')}
           </div>
@@ -503,8 +506,13 @@ window.renderDeckEditor = renderDeckEditor;
 
 function addToDeck(card) {
   const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
+  const cardCost = card.cost || Math.max(1, Math.floor((card.power || 0) / 5));
+  const currentTotalCost = deck.reduce((sum, c) => sum + (c.cost || 0), 0);
+
   if (deck.length >= 10) return alert("デッキは10枚までです");
-  if (deck.some(c => c.id === card.id)) return alert("同じカードは1枚までです"); // Duplicate check
+  if (currentTotalCost + cardCost > 50) return alert("合計コストが50を超えてしまいます");
+  if (deck.some(c => c.id === card.id)) return alert("同じカードは1枚までです");
+
   deck.push(card);
   localStorage.setItem('my_custom_deck', JSON.stringify(deck));
   renderDeckEditor();
@@ -607,7 +615,16 @@ window.saveCustomCard = () => {
   if (power > 20) power = 20;
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
   const element = document.getElementById('card-element').value;
-  const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
+  const costInput = document.getElementById('card-cost');
+  let cost = parseInt(costInput.value) || Math.max(1, Math.floor(power / 5));
+
+  // Power 10+ requires Cost 5+
+  if (power >= 10 && cost < 5) {
+    alert("攻撃力/効果値が10以上のカードは、コストを5以上に設定する必要があります");
+    if (costInput) costInput.value = 5;
+    return;
+  }
+
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
 

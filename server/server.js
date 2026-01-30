@@ -78,6 +78,12 @@ io.on('connection', (socket) => {
         if (!result) return;
         const { roomId, room } = result;
 
+        // Store deck size if provided
+        if (data.deckSize !== undefined) {
+            if (!room.playerDeckSizes) room.playerDeckSizes = {};
+            room.playerDeckSizes[socket.id] = data.deckSize;
+        }
+
         const gameState = GameLogic.initializeGame(room);
         io.to(roomId).emit('game_started', gameState);
     });

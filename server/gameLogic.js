@@ -21,7 +21,8 @@ class GameLogic {
                 field: {
                     summonedCard: null
                 },
-                usedCardIds: [] // [NEW] Track used deck cards
+                usedCardIds: [], // [NEW] Track used deck cards
+                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] || 10) : 10
             };
         });
 
@@ -186,6 +187,12 @@ class GameLogic {
                 resultLogs.push(`💀 ${unit.name} は消滅した。`);
                 currentActor.field.summonedCard = null;
             }
+        }
+
+        // Penalty for empty hand (exhausted deck cards)
+        if (currentActor && currentActor.usedCardIds && currentActor.usedCardIds.length >= currentActor.deckSize) {
+            currentActor.hp = Math.max(0, currentActor.hp - 5);
+            resultLogs.push(`🥀 手札が枯渇しているため、${currentActor.playerName || currentActor.id.slice(0, 4)} のライフが 5 減少！ (残りHP: ${currentActor.hp})`);
         }
 
         const currentIndex = room.players.indexOf(state.currentTurnPlayerId);
