@@ -84,11 +84,17 @@ io.on('connection', (socket) => {
 
     socket.on('play_card', (cardData) => {
         const result = RoomManager.getRoomIdAndState(socket.id);
-        if (!result) return;
+        if (!result) {
+            console.error(`[CARD_ERROR] Room not found for socket: ${socket.id}`);
+            return;
+        }
         const { roomId, room } = result;
+
+        console.log(`[PLAY_CARD] From: ${socket.id}, CurrentTurn: ${room.gameState.currentTurnPlayerId}`);
 
         const actionResult = GameLogic.processCard(room, socket.id, cardData);
         if (actionResult.error) {
+            console.warn(`[CARD_REJECTED] ${actionResult.error} (Actor: ${socket.id})`);
             socket.emit('error_message', actionResult.error);
         } else {
             io.to(roomId).emit('action_performed', {
@@ -106,7 +112,13 @@ io.on('connection', (socket) => {
         if (!result) return;
         const { roomId, room } = result;
 
-        if (room.gameState.currentTurnPlayerId !== socket.id) return;
+        console.log(`[END_TURN] From: ${socket.id}, CurrentTurn: ${room.gameState.currentTurnPlayerId}`);
+
+        if (room.gameState.currentTurnPlayerId !== socket.id) {
+            console.warn(`[TURN_REJECTED] Not actor's turn. Actor: ${socket.id}, Expected: ${room.gameState.currentTurnPlayerId}`);
+            socket.emit('error_message', 'Not your turn');
+            return;
+        }
 
         const turnResult = GameLogic.endTurn(room);
         io.to(roomId).emit('turn_changed', turnResult);

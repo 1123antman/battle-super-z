@@ -202,11 +202,13 @@ function setupBattleEvents() {
 // --- Battle Logic ---
 
 window.endTurn = () => {
-  if (!currentRoomId) return;
+  if (!currentRoomId || isActing) return;
+  isActing = true;
   // UI保護: 送信直後に全ボタンを無効化
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = true);
 
+  console.log(`[ACTION] End turn. Room: ${currentRoomId}. MyID: ${socket.id}`);
   socket.emit('end_turn', { roomId: currentRoomId });
 };
 
@@ -221,7 +223,8 @@ socket.on('game_over', (data) => {
 const battleLogs = [];
 
 socket.on('action_performed', (data) => {
-  console.log("Action:", data);
+  console.log("Action performed:", data);
+  isActing = false;
 
   // [NEW] Visual Feedback for impact
   if (data.logs && data.logs.length > 0) {
@@ -253,6 +256,7 @@ function triggerShake() {
 
 socket.on('turn_changed', (data) => {
   console.log("Turn Changed:", data);
+  isActing = false;
   battleLogs.push(`--- ターン交代 ---`);
   localUsedTypes = [];
   renderBattle(data.gameState);
@@ -277,6 +281,8 @@ function showTurnBanner(text) {
 }
 
 socket.on('error_message', (msg) => {
+  console.warn("Server Error:", msg);
+  isActing = false;
   alert("エラー: " + msg);
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = false);
@@ -713,14 +719,20 @@ function renderBattle(gameState) {
   updateLogs();
 }
 
+let isActing = false; // [NEW] Flag to prevent double-click / simultaneous sends
+
 window.playCardWithObj = (card, actionType = 'use') => {
-  if (!currentRoomId) return;
+  if (!currentRoomId || isActing) return;
+
+  isActing = true;
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = true);
 
   let targetId = null;
   const opponent = document.querySelector('.player-card.opponent');
   if (opponent) targetId = opponent.dataset.id;
+
+  console.log(`[ACTION] Playing card ${card.id} (${actionType}) to room ${currentRoomId}. MyID: ${socket.id}`);
 
   socket.emit('play_card', {
     roomId: currentRoomId,
@@ -735,6 +747,8 @@ window.playCardWithObj = (card, actionType = 'use') => {
     id: card.id,
     actionType: actionType
   });
+
+  // isActing is reset in action_performed or error_message
 };
 
 setupTitleEvents();
