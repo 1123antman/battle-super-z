@@ -112,11 +112,13 @@ class GameLogic {
                             const owner = state.players[target.ownerId];
                             const ownerName = owner.playerName || owner.id.slice(0, 4);
                             resultLog.push(`【攻撃】${actorName} が ${ownerName} の召喚ユニット「${unit.name}」を攻撃！`);
-                            if (damage > unit.power) {
-                                resultLog.push(`💥 威力 ${damage} > ユニット攻撃力 ${unit.power} により、${unit.name} は破壊された！`);
+
+                            unit.power -= damage; // Deduct power instead of binary check
+                            if (unit.power <= 0) {
+                                resultLog.push(`💥 威力 ${damage} により、${unit.name} は破壊された！`);
                                 owner.field.summonedCard = null;
                             } else {
-                                resultLog.push(`🛡️ ${unit.name} は攻撃を耐え抜いた。（威力不足）`);
+                                resultLog.push(`🛡️ ${unit.name} は耐えたが、残存威力は ${unit.power} に減少した。`);
                             }
                             return;
                         }
@@ -172,6 +174,20 @@ class GameLogic {
 
     endTurn(room) {
         const state = room.gameState;
+        const resultLogs = [];
+
+        // Decay logic for the actor WHO JUST FINISHED their turn
+        const currentActor = state.players[state.currentTurnPlayerId];
+        if (currentActor && currentActor.field.summonedCard) {
+            const unit = currentActor.field.summonedCard;
+            unit.power -= 2;
+            resultLogs.push(`⏳ ターン経過により ${unit.name} の威力が 2 減少。 (残り: ${unit.power})`);
+            if (unit.power <= 0) {
+                resultLogs.push(`💀 ${unit.name} は消滅した。`);
+                currentActor.field.summonedCard = null;
+            }
+        }
+
         const currentIndex = room.players.indexOf(state.currentTurnPlayerId);
         const nextIndex = (currentIndex + 1) % room.players.length;
         state.currentTurnPlayerId = room.players[nextIndex];
@@ -184,7 +200,8 @@ class GameLogic {
 
         return {
             nextPlayerId: state.currentTurnPlayerId,
-            gameState: state
+            gameState: state,
+            logs: resultLogs
         };
     }
 }

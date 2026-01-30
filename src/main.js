@@ -258,6 +258,7 @@ socket.on('turn_changed', (data) => {
   console.log("Turn Changed:", data);
   isActing = false;
   battleLogs.push(`--- ターン交代 ---`);
+  if (data.logs) battleLogs.push(...data.logs); // Add decay logs etc.
   localUsedTypes = [];
   renderBattle(data.gameState);
 
@@ -468,12 +469,15 @@ function renderDeckEditor() {
         <div class="available-cards card-list-section">
           <h3>所持カード</h3>
           <div class="card-grid">
-            ${allAvailable.map(card => `
-              <div class="editor-card" onclick='addToDeck(${JSON.stringify(card)})'>
+            ${allAvailable.map(card => {
+    const inDeck = currentDeck.some(c => c.id === card.id);
+    return `
+              <div class="editor-card ${inDeck ? 'card-selected' : ''}" onclick='${inDeck ? '' : `addToDeck(${JSON.stringify(card)})`}'>
                 <div class="card-name">${card.name}</div>
                 <div class="card-info">${card.element || 'none'} / ${card.effectId} (${card.power})</div>
+                ${inDeck ? '<div class="card-tag">選択中</div>' : ''}
               </div>
-            `).join('')}
+            `}).join('')}
           </div>
         </div>
         <div class="current-deck card-list-section">
@@ -500,6 +504,7 @@ window.renderDeckEditor = renderDeckEditor;
 function addToDeck(card) {
   const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
   if (deck.length >= 10) return alert("デッキは10枚までです");
+  if (deck.some(c => c.id === card.id)) return alert("同じカードは1枚までです"); // Duplicate check
   deck.push(card);
   localStorage.setItem('my_custom_deck', JSON.stringify(deck));
   renderDeckEditor();
