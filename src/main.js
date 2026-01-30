@@ -116,6 +116,10 @@ function setupTitleEvents() {
     };
   }
 
+  if (btnRules) {
+    btnRules.onclick = () => renderRules();
+  }
+
   if (btnCreator) {
     btnCreator.onclick = () => renderCardCreator();
   }
