@@ -124,6 +124,12 @@ io.on('connection', (socket) => {
                 gameState: actionResult.gameState
             });
             console.log(`Action in ${roomId}:`, actionResult.logs);
+
+            // Check Game Over
+            const overCheck = GameLogic.checkGameOver(room.gameState);
+            if (overCheck.finished) {
+                io.to(roomId).emit('game_over', { winnerId: overCheck.winnerId });
+            }
         }
     });
 
@@ -142,6 +148,12 @@ io.on('connection', (socket) => {
 
         const turnResult = GameLogic.endTurn(room);
         io.to(roomId).emit('turn_changed', turnResult);
+
+        // Check Game Over (Penalty damage might kill a player)
+        const overCheck = GameLogic.checkGameOver(room.gameState);
+        if (overCheck.finished) {
+            io.to(roomId).emit('game_over', { winnerId: overCheck.winnerId });
+        }
     });
 
     socket.on('chat_message', (data) => {

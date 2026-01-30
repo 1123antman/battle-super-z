@@ -211,6 +211,19 @@ class GameLogic {
             logs: resultLogs
         };
     }
+
+    checkGameOver(state) {
+        const players = Object.values(state.players);
+        const loser = players.find(p => p.hp <= 0);
+        if (loser) {
+            const winner = players.find(p => p.id !== loser.id);
+            return {
+                finished: true,
+                winnerId: winner ? winner.id : null
+            };
+        }
+        return { finished: false };
+    }
 }
 
 export default new GameLogic();
