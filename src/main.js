@@ -56,7 +56,7 @@ window.goToHome = (confirmRequired = false) => {
 
 // --- View Management ---
 
-function showView(viewName, contentHTML = '') {
+window.showView = function (viewName, contentHTML = '') {
   app.innerHTML = '';
   if (viewName === 'title') {
     app.appendChild(views.title);
@@ -392,95 +392,129 @@ window.handleImageUpload = (input) => {
 
 const STARTER_DECKS = {
   balance: [
-    { name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
-    { name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
-    { name: "救急キット", effectId: "heal", power: 10, cost: 2 }
+    { id: 's1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
+    { id: 's2', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
+    { id: 's3', name: "救急キット", effectId: "heal", power: 10, cost: 2 }
   ],
   aggro: [
-    { name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
-    { name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
-    { name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 }
+    { id: 's4', name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
+    { id: 's5', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
+    { id: 's6', name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 }
   ],
   tank: [
-    { name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
-    { name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
-    { name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
+    { id: 's7', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
+    { id: 's8', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
+    { id: 's9', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
   ]
 };
 
 function getMyCards() {
   const deckType = localStorage.getItem('selected_deck') || 'balance';
   const custom = JSON.parse(localStorage.getItem('my_cards') || '[]');
-
-  if (deckType === 'custom') {
-    return custom.length > 0 ? custom : STARTER_DECKS.balance;
-  }
+  if (deckType === 'custom') return custom.length > 0 ? custom : STARTER_DECKS.balance;
   return STARTER_DECKS[deckType] || STARTER_DECKS.balance;
 }
-const canvas = document.getElementById('card-canvas');
-if (!canvas) return;
-const ctx = canvas.getContext('2d');
 
-const isSpecial = document.getElementById('is-special').value === 'special';
-const name = document.getElementById('card-name').value;
-let power = parseInt(document.getElementById('card-power').value) || 0;
-if (power > 20) {
-  power = 20;
-  document.getElementById('card-power').value = 20;
-}
-const element = document.getElementById('card-element').value;
-const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
-const frame = document.getElementById('card-frame').value;
-const vfx = document.getElementById('card-vfx').value;
+window.renderDeckSelection = () => {
+  const current = localStorage.getItem('selected_deck') || 'balance';
+  const html = `
+        <div class="deck-selection-container">
+            <h2>デッキ選択</h2>
+            <div class="deck-options">
+                <div class="deck-option ${current === 'balance' ? 'selected' : ''}" onclick="selectDeck('balance')">
+                    <h3>バランス型</h3><p>攻守のバランスが良いデッキ</p>
+                </div>
+                <div class="deck-option ${current === 'aggro' ? 'selected' : ''}" onclick="selectDeck('aggro')">
+                    <h3>攻撃特化型</h3><p>高火力で攻めるデッキ</p>
+                </div>
+                <div class="deck-option ${current === 'tank' ? 'selected' : ''}" onclick="selectDeck('tank')">
+                    <h3>防御・回復型</h3><p>粘り強く戦うデッキ</p>
+                </div>
+                <div class="deck-option ${current === 'custom' ? 'selected' : ''}" onclick="selectDeck('custom')">
+                    <h3>カスタム</h3><p>全ての自作カードを使用</p>
+                </div>
+            </div>
+            <button onclick="showView('title')" class="back-btn">タイトルに戻る</button>
+        </div>
+    `;
+  showView('deck-selection', html);
+};
 
-// Background
-ctx.fillStyle = '#1a1a24';
-let bgApplied = false;
-if (element === 'fire') { ctx.fillStyle = '#3a1a1a'; bgApplied = true; }
-else if (element === 'water') { ctx.fillStyle = '#1a2e3a'; bgApplied = true; }
-else if (element === 'wood') { ctx.fillStyle = '#1a3a1a'; bgApplied = true; }
+window.selectDeck = (type) => {
+  localStorage.setItem('selected_deck', type);
+  renderDeckSelection();
+};
 
-if (!bgApplied) {
-  if (effect === 'attack') ctx.fillStyle = '#331111';
-  else if (effect === 'heal') ctx.fillStyle = '#113311';
-  else if (effect === 'defense') ctx.fillStyle = '#111133';
-}
-ctx.fillRect(0, 0, 200, 300);
+window.updatePreview = () => {
+  const canvas = document.getElementById('card-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
 
-// Frame based on choice
-ctx.lineWidth = 6;
-if (frame === 'gold') ctx.strokeStyle = '#ffd700';
-else if (frame === 'dark') ctx.strokeStyle = '#444';
-else ctx.strokeStyle = '#00ffcc';
-ctx.strokeRect(5, 5, 190, 290);
+  const isSpecial = document.getElementById('is-special').value === 'special';
+  const nameInput = document.getElementById('card-name');
+  const name = nameInput ? nameInput.value : "Card";
+  const powerInput = document.getElementById('card-power');
+  let power = powerInput ? (parseInt(powerInput.value) || 0) : 10;
+  if (power > 20) { power = 20; if (powerInput) powerInput.value = 20; }
 
-// [VFX Indicator in preview]
-if (vfx !== 'default') {
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ctx.font = '10px Arial';
-  ctx.fillText(`VFX: ${vfx}`, 160, 20);
-}
+  const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
+  const element = document.getElementById('card-element').value;
+  const costInput = document.getElementById('card-cost');
+  const cost = (costInput && costInput.value) ? parseInt(costInput.value) : Math.max(1, Math.floor(power / 5));
+  const frame = document.getElementById('card-frame').value;
+  const vfx = document.getElementById('card-vfx').value;
 
-// Text
-ctx.fillStyle = '#fff';
-ctx.font = 'bold 18px Arial';
-ctx.textAlign = 'center';
-ctx.fillText(name, 100, 30);
+  // Background
+  ctx.fillStyle = '#1a1a24';
+  let bgApplied = false;
+  if (element === 'fire') { ctx.fillStyle = '#3a1a1a'; bgApplied = true; }
+  else if (element === 'water') { ctx.fillStyle = '#1a2e3a'; bgApplied = true; }
+  else if (element === 'wood') { ctx.fillStyle = '#1a3a1a'; bgApplied = true; }
 
-ctx.font = 'bold 24px Arial';
-ctx.fillText(power, 100, 230);
+  if (!bgApplied) {
+    if (effect === 'attack') ctx.fillStyle = '#331111';
+    else if (effect === 'heal') ctx.fillStyle = '#113311';
+    else if (effect === 'defense') ctx.fillStyle = '#111133';
+  }
+  ctx.fillRect(0, 0, 200, 300);
 
-ctx.font = 'bold 16px Arial';
-ctx.fillStyle = '#00aaff';
-ctx.fillText(`COST: ${cost}`, 100, 255);
+  // Image
+  if (loadedImage) {
+    ctx.drawImage(loadedImage, 10, 40, 180, 150);
+  } else {
+    ctx.fillStyle = '#333';
+    ctx.fillRect(10, 40, 180, 150);
+    ctx.fillStyle = '#555';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("No Image", 100, 120);
+  }
 
-ctx.font = '14px Arial';
-ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
-ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 280);
+  // Frame
+  ctx.lineWidth = 6;
+  if (frame === 'gold') ctx.strokeStyle = '#ffd700';
+  else if (frame === 'dark') ctx.strokeStyle = '#444';
+  else ctx.strokeStyle = '#00ffcc';
+  ctx.strokeRect(5, 5, 190, 290);
+
+  // Text
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 18px Arial';
+  ctx.fillText(name, 100, 30);
+  ctx.font = 'bold 24px Arial';
+  ctx.fillText(power, 100, 230);
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = '#00aaff';
+  ctx.fillText(`COST: ${cost}`, 100, 255);
+  ctx.font = '12px Arial';
+  ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
+  ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 280);
 };
 
 window.saveCustomCard = () => {
   const canvas = document.getElementById('card-canvas');
+  if (!canvas) return;
   const isSpecial = document.getElementById('is-special').value === 'special';
   const name = document.getElementById('card-name').value;
   let power = parseInt(document.getElementById('card-power').value) || 0;
@@ -491,109 +525,46 @@ window.saveCustomCard = () => {
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
 
-  const imageData = canvas.toDataURL('image/png');
-
   const newCard = {
-    id: Date.now().toString(),
-    name: name,
-    power: power,
-    effectId: effect,
-    element: element,
-    cost: cost,
-    frame: frame,
-    vfx: vfx,
-    target: (effect === 'attack' || effect === 'special') ? 'enemy' : 'self',
-    image: imageData,
-    isCustom: true
+    id: 'c' + Date.now(),
+    name, power, effectId: effect, element, cost, frame, vfx,
+    isCustom: true,
+    image: canvas.toDataURL('image/png')
   };
-
   const stored = JSON.parse(localStorage.getItem('my_cards') || '[]');
   stored.push(newCard);
   localStorage.setItem('my_cards', JSON.stringify(stored));
-
   alert("カードを保存しました！");
   showView('title');
 };
 
-const STARTER_DECKS = {
-  balance: [
-    { name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
-    { name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
-    { name: "救急キット", effectId: "heal", power: 10, cost: 2 }
-  ],
-  aggro: [
-    { name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
-    { name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
-    { name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 }
-  ],
-  tank: [
-    { name: "大盾", defense: "defense", power: 20, element: "wood", cost: 4 },
-    { name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
-    { name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
-  ]
-};
 
-function getMyCards() {
-  const custom = JSON.parse(localStorage.getItem('my_cards') || '[]');
-  // 初期状態でカードがない場合のためにスターターを混ぜる（または選択させる）
-  // ここでは単純化のため、全プレイヤーに「バランス」デッキを配布
-  return [...STARTER_DECKS.balance, ...custom];
-}
-
-// Modify renders to use custom cards
-// We inject this by overriding renderBattle in runtime or just assuming it calls getMyCards() if we modded it.
-// The previous step didn't mod renderBattle to call getMyCards. 
-// I need to patch renderBattle here OR rewrite it.
-// I'll patch playCard too to handle image sending? 
-// No, playCard takes (effectId, power, target). It needs 'image' too for custom.
-// Let's redefine playCard to accept whole card object or handle it.
-
-// Redefining renderBattle to include custom cards
-const originalRenderBattle = renderBattle;
-// We actually need to overwrite the previous renderBattle function.
-// Since I can't easily target "middle of function", I will overwrite it entirely in this block if I can validation valid JS.
-// But I can't overwrite a function declared previously in the same file easily without rewriting the whole file.
-// However, I can assign a new value if it was a var, but it's a function declaration.
-// I will just rely on the USER to trust me to update renderBattle in the NEXT step or use a clever replace.
-// Ah, `replace_file_content` allows me to target the PREVIOUS `renderBattle` if I want.
-// BUT I am targeting `// Initial Setup` (END of file).
-// So I am appending.
-// I will append a REDEFINITION of renderBattle (will causing SyntaxError? No, var/function name collision).
-// Actually, function declarations are hoisted. Two functions with same name = LATEST one wins (or first? usually last in source order overwrites).
-// Let's rely on that behavior: I redefine `renderBattle` at the end of file.
+// --- Battle Rendering ---
 
 function renderBattle(gameState) {
-  const myPlayer = gameState.players[myPlayerId];
+  const myPlayer = gameState.players[myPlayerId] || { hp: 0, energy: 0, shield: 0 };
   const isMyTurn = gameState.currentTurnPlayerId === myPlayerId;
   const opponents = Object.values(gameState.players).filter(p => p.id !== myPlayerId);
 
-  const customCards = getMyCards();
+  const deckCards = getMyCards();
   const baseCards = [
-    { name: "基本攻撃", effectId: "attack", power: 10, target: "enemy", cost: 2, id: "base_atk" },
-    { name: "基本回復", effectId: "heal", power: 10, target: "self", cost: 2, id: "base_heal" }
+    { id: 'base_atk', name: "基本攻撃", effectId: "attack", power: 10, target: "enemy", cost: 2 },
+    { id: 'base_heal', name: "基本回復", effectId: "heal", power: 10, target: "self", cost: 2 }
   ];
-  const hand = [...baseCards, ...customCards];
+  const hand = [...baseCards, ...deckCards];
 
-  // [NEW] Separate hand into usable and used/disabled
   const checkDisabled = (card) => {
-    const alreadyUsedEffect = myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId);
+    const alreadyUsedType = myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId);
     const alreadyUsedCustom = card.isCustom && myPlayer.usedCustomCardIds && myPlayer.usedCustomCardIds.includes(card.id);
-    const energyShortage = myPlayer.energy < (card.cost || Math.max(1, Math.floor(card.power / 5)));
-    return !isMyTurn || alreadyUsedEffect || alreadyUsedCustom || energyShortage;
+    const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
+    return !isMyTurn || alreadyUsedType || alreadyUsedCustom || (myPlayer.energy < cost);
   };
 
-  const sortedHand = [...hand].sort((a, b) => {
-    const aDisabled = checkDisabled(a);
-    const bDisabled = checkDisabled(b);
-    return aDisabled - bDisabled; // Disabled cards go to the end (right)
-  });
+  const sortedHand = [...hand].sort((a, b) => checkDisabled(a) - checkDisabled(b));
 
-  let html = `
+  const html = `
     <div class="battle-container">
-      <div class="turn-indicator ${isMyTurn ? 'my-turn' : ''}">
-        ${isMyTurn ? "あなたのターン" : "相手のターン"}
-      </div>
-
+      <div class="turn-indicator ${isMyTurn ? 'my-turn' : ''}">${isMyTurn ? "あなたのターン" : "相手のターン"}</div>
       <div class="opponents-row">
         ${opponents.map(p => `
           <div class="player-card opponent" data-id="${p.id}">
@@ -604,151 +575,66 @@ function renderBattle(gameState) {
                ${p.field && p.field.summonedCard ? `
                  <div class="summoned-unit">
                    ${p.field.summonedCard.image ? `<img src="${p.field.summonedCard.image}" class="unit-img">` : ''}
-                   <div class="unit-info">
-                      ⚔️ ${p.field.summonedCard.power} <br>
-                      ${p.field.summonedCard.name}
-                   </div>
+                   <div class="unit-info">⚔️ ${p.field.summonedCard.power} <br> ${p.field.summonedCard.name}</div>
                  </div>
                ` : '<div class="empty-field">空きフィールド</div>'}
             </div>
           </div>
         `).join('')}
       </div>
-
       <div class="log-area" id="battle-log"></div>
-
       <div class="quick-chat">
          <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
          <button onclick="sendChat('強い！')">🔥 強い！</button>
          <button onclick="sendChat('参りました')">🏳️ 参りました</button>
       </div>
-
       <div class="my-area">
-         <div class="home-btn-container">
-            <button onclick="goToHome(true)" class="home-btn-mini">ホーム</button>
-         </div>
+        <div class="home-btn-container"><button onclick="goToHome(true)" class="home-btn-mini">ホーム</button></div>
         <div class="player-card self">
           <div class="player-name">自分</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
-          <div class="energy-display">🔋 エネルギー: ${myPlayer.energy} / ${myPlayer.maxEnergy} (+${myPlayer.energyPerTurn})</div>
-            <div class="summon-field">
+          <div class="energy-display">🔋 エネルギー: ${myPlayer.energy} / ${myPlayer.maxEnergy || 10}</div>
+          <div class="summon-field">
                ${myPlayer.field && myPlayer.field.summonedCard ? `
                  <div class="summoned-unit self-unit">
                    ${myPlayer.field.summonedCard.image ? `<img src="${myPlayer.field.summonedCard.image}" class="unit-img">` : ''}
-                   <div class="unit-info">
-                      ⚔️ ${myPlayer.field.summonedCard.power} <br>
-                      ${myPlayer.field.summonedCard.name}
-                   </div>
+                   <div class="unit-info">⚔️ ${myPlayer.field.summonedCard.power} <br> ${myPlayer.field.summonedCard.name}</div>
                  </div>
                ` : '<div class="empty-field">空きフィールド</div>'}
-            </div>
+          </div>
         </div>
-
         <div class="hand-area">
-          ${sortedHand.map((card, idx) => {
+          ${sortedHand.map(card => {
     const isDisabled = checkDisabled(card);
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
     return `
             <div class="card-wrapper ${isDisabled ? 'card-disabled' : ''}">
-                <button class="card-btn" 
-                  onclick='playCardWithObj(${JSON.stringify(card)}, "use")' 
-                  ${isDisabled ? 'disabled' : ''}
-                  style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}"
-                >
+                <button class="card-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "use")' ${isDisabled ? 'disabled' : ''} style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}">
                   <div class="card-cost">${cost}</div>
                   ${!card.image ? card.name : ''}<br>
                   <small>${card.element ? `${card.element} ` : ''}${card.effectId} (${card.power})</small>
                 </button>
-                ${card.effectId === 'attack' ? `
-                    <button class="summon-btn"
-                        onclick='playCardWithObj(${JSON.stringify(card)}, "summon")'
-                        ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}
-                    >召喚</button>
-                ` : ''}
-            </div>
-          `}).join('')}
-           <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>
-             ターン終了
-           </button>
+                ${card.effectId === 'attack' ? `<button class="summon-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "summon")' ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}>召喚</button>` : ''}
+            </div>`;
+  }).join('')}
+          <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>ターン終了</button>
         </div>
       </div>
-    </div>
-  `;
-
+    </div>`;
   showView('battle', html);
   updateLogs();
 }
 
 window.playCardWithObj = (card, actionType = 'use') => {
   if (!currentRoomId) return;
-
-  // [NEW] Animation: Fly to target
-  const cardElement = event ? event.currentTarget.closest('.card-wrapper') : null;
-  if (cardElement) {
-    const tx = (window.innerWidth / 2) - cardElement.getBoundingClientRect().left - 50;
-    const ty = -200;
-    cardElement.style.setProperty('--tx', `${tx}px`);
-    cardElement.style.setProperty('--ty', `${ty}px`);
-    cardElement.classList.add('card-flying');
-  }
-
-  // Manually update buttons state immediately for responsiveness
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
-  // buttons from previous declaration removed
-  // Re-run the disable logic manually or just wait for renderBattle? 
-  // renderBattle is triggered by socket event, which might have lag.
-  // Let's force a disable style on buttons matching this type.
-  // ACTUALLY, we can't easily re-render whole view here without `gameState`.
-  // So we just rely on `localUsedTypes` being checked in `renderBattle`, 
-  // AND we manually disable buttons of this type right now.
-
-  // Find all buttons that are for this effectId (we need to parse their onclick or inspect DOM? Hard.)
-  // Easier: Just force disable ALL buttons briefly? No, user wants to do multiple actions.
-  // Simple hack: Just disable the clicked button?
-  // No, we want to disable ALL attacks if I used one attack.
-
-  // Let's blindly iterate buttons and check their innerHTML for the type? weak.
-  // Let's RE-RENDER if we had the state, but we don't.
-  // Wait, `views.battle` doesn't store state.
-
-  // Okay, let's just rely on the Server ECHO 'action_performed' to update UI.
-  // It should be fast enough.
-  // BUT the user complained "limit not working" before, implying they could click fast.
-  // So we DO want immediate blocking.
-
-  // Let's temporarily disable ALL buttons, and then when 'action_performed' comes back, 
-  // `renderBattle` runs and will re-enable based on `usedEffectTypes`.
-  // Wait, if we disable ALL, they can't do the 2nd action immediately.
-  // That effectively enforces "1 action at a time" which is fine, as long as it unlocks quickly.
-  // Yes, blocking ALL until server confirmation is safer to prevent race conditions.
   buttons.forEach(btn => btn.disabled = true);
 
-  // We DO NOT set localUsedTypes here if we just block all.
-  // Wait, if we block all, then `renderBattle` comes, it uses `usedEffectTypes` from server.
-  // But `localUsedTypes` is useful if server is slow or packet loss?
-  // Let's keep `localUsedTypes` as a visual hint helper if we want "optimistic UI".
-  // But the "Disable ALL" strategy is safest for anti-mash.
-  // AND it doesn't conflict with "Multiple actions per turn" because the server will return "success"
-  // and `renderBattle` will re-render with ONLY that type disabled.
-
-  // So:
-  // 1. Click -> Disable ALL buttons.
-  // 2. Send socket.
-  // 3. Server says OK (with new `usedEffectTypes`).
-  // 4. `renderBattle` runs -> buttons re-enabled EXCEPT used types.
-
-  // This seems perfect. "Blocking" is just "Processing...".
-
   let targetId = null;
-  if (card.target === 'enemy') {
-    const opponentCards = document.querySelectorAll('.player-card.opponent');
-    if (opponentCards.length > 0) {
-      targetId = opponentCards[0].dataset.id;
-    }
-  }
+  const opponent = document.querySelector('.player-card.opponent');
+  if (opponent) targetId = opponent.dataset.id;
 
-  // Send full card data including optional image
   socket.emit('play_card', {
     roomId: currentRoomId,
     effectId: card.effectId,
@@ -764,5 +650,4 @@ window.playCardWithObj = (card, actionType = 'use') => {
   });
 };
 
-// Initial Setup
 setupTitleEvents();
