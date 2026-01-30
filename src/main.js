@@ -44,7 +44,7 @@ const app = document.getElementById('app');
 
 // State
 let currentRoomId = null;
-let myPlayerId = null;
+let lastGameState = null; // [NEW] Track last known good state
 let localUsedTypes = []; // Client-side fallback: list of effectIds used this turn
 
 // --- 画面遷移管理 ---
@@ -176,7 +176,6 @@ function setupLobbyEvents() {
 
 socket.on('connect', () => {
   console.log("Connected to server:", socket.id);
-  myPlayerId = socket.id;
 });
 
 socket.on('player_joined', (data) => {
@@ -213,7 +212,7 @@ window.endTurn = () => {
 };
 
 socket.on('game_over', (data) => {
-  const isWinner = data.winnerId === myPlayerId;
+  const isWinner = data.winnerId === socket.id;
   saveWinLoss(isWinner ? 'win' : 'loss');
   alert(isWinner ? "勝利しました！" : "敗北...");
   battleLogs.length = 0; // Clear logs for next game
@@ -261,7 +260,7 @@ socket.on('turn_changed', (data) => {
   localUsedTypes = [];
   renderBattle(data.gameState);
 
-  if (data.gameState.currentTurnPlayerId === myPlayerId) {
+  if (data.gameState.currentTurnPlayerId === socket.id) {
     showTurnBanner("自分のターン");
     playSE('turn_start');
   }
@@ -286,7 +285,9 @@ socket.on('error_message', (msg) => {
   alert("エラー: " + msg);
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = false);
-  // Re-render UI to ensure current state is consistent (lastGameState should be tracked better if needed)
+
+  // Re-render if we have a state
+  if (lastGameState) renderBattle(lastGameState);
 });
 
 function updateLogs() {
@@ -621,9 +622,13 @@ window.saveCustomCard = () => {
 // --- Battle Rendering ---
 
 function renderBattle(gameState) {
-  const myPlayer = gameState.players[myPlayerId] || { hp: 0, energy: 0, shield: 0 };
-  const isMyTurn = gameState.currentTurnPlayerId === myPlayerId;
-  const opponents = Object.values(gameState.players).filter(p => p.id !== myPlayerId);
+  lastGameState = gameState; // Store updated state
+  const myId = socket.id;
+  console.log(`[RENDER] MyID: ${myId}, Turn: ${gameState.currentTurnPlayerId}`);
+
+  const myPlayer = gameState.players[myId] || { hp: 0, energy: 0, shield: 0 };
+  const isMyTurn = gameState.currentTurnPlayerId === myId;
+  const opponents = Object.values(gameState.players).filter(p => p.id !== myId);
 
   const deckCards = getMyCards();
   const baseCards = [
