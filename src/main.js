@@ -97,7 +97,10 @@ socket.on('chat_received', (data) => {
 function setupTitleEvents() {
   const btnCreate = document.getElementById('btn-create-room');
   const btnJoin = document.getElementById('btn-join-room');
+  const btnRules = document.getElementById('btn-rules');
   const inputRoom = document.getElementById('input-room-id');
+  const btnCreator = document.getElementById('btn-card-creator');
+  const btnDeckEditor = document.getElementById('btn-deck-select');
 
   if (btnCreate) {
     btnCreate.onclick = () => {
@@ -113,14 +116,12 @@ function setupTitleEvents() {
     };
   }
 
-  const btnCreator = document.getElementById('btn-card-creator');
   if (btnCreator) {
     btnCreator.onclick = () => renderCardCreator();
   }
 
-  const btnDeckSelect = document.getElementById('btn-deck-select');
-  if (btnDeckSelect) {
-    btnDeckSelect.onclick = () => renderDeckEditor();
+  if (btnDeckEditor) {
+    btnDeckEditor.onclick = () => renderDeckEditor();
   }
 
   const inputName = document.getElementById('input-player-name');
@@ -174,6 +175,54 @@ function setupLobbyEvents() {
     };
   }
 }
+
+window.renderRules = () => {
+  const html = `
+    <div class="rules-container">
+      <h1>BATTLE SUPER Z ルール説明</h1>
+      
+      <section>
+        <h2>1. デッキ編成のルール</h2>
+        <ul>
+          <li>デッキは<span class="highlight">最大10枚</span>のカードで構成されます。</li>
+          <li>カードの<span class="highlight">合計コストは50以下</span>である必要があります。</li>
+          <li>同じカード（IDが同じもの）はデッキに<span class="highlight">1枚</span>しか入れられません。</li>
+          <li>基本アクション（攻撃・シールド・回復）はデッキに関わらず常に使用可能です。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. オリジナルカード作成</h2>
+        <ul>
+          <li>攻撃力または効果値が<span class="danger">10以上</span>のカードを作る場合、コストは<span class="danger">5以上</span>に設定する必要があります。</li>
+          <li>強力なカードには相応のエネルギー消費が求められます。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>3. 召喚ユニットの仕様</h2>
+        <ul>
+          <li>攻撃カードを「召喚」としてプレイすると、場にユニットを配置できます。</li>
+          <li><span class="highlight">削りダメージ</span>: ユニットを攻撃した際、一撃で倒せなくても、攻撃力の分だけユニットの威力を減少させられます。</li>
+          <li><span class="highlight">自然減衰</span>: 召喚ユニットは持ち主のターンが終わるたびに、威力が<span class="danger">2減少</span>します。威力が0になると消滅します。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. ペナルティと勝利条件</h2>
+        <ul>
+          <li>相手のHPを<span class="highlight">0</span>にすれば勝利です。</li>
+          <li><span class="danger">手札枯渇ペナルティ</span>: デッキに入れた使い切りカードをすべて使い切ったプレイヤーは、毎ターン終了時に<span class="danger">5 HP</span>のダメージを受けます。</li>
+        </ul>
+      </section>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <button class="menu-btn" onclick="goToHome()">タイトルに戻る</button>
+      </div>
+    </div>
+  `;
+  showView('rules', html);
+};
 
 // --- Socket Events ---
 

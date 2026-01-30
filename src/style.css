@@ -534,6 +534,54 @@ option {
     letter-spacing: 4px;
 }
 
+/* Rules Screen */
+.rules-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 15px;
+    border: 1px solid #444;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.rules-container h2 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-top: 30px;
+}
+
+.rules-container h3 {
+    color: #ffd700;
+    margin-top: 20px;
+}
+
+.rules-container p,
+.rules-container li {
+    color: #ddd;
+    line-height: 1.6;
+}
+
+.rules-container ul {
+    padding-left: 20px;
+}
+
+.rules-container li {
+    margin-bottom: 8px;
+}
+
+.highlight {
+    color: #00aaff;
+    font-weight: bold;
+}
+
+.danger {
+    color: #ff3333;
+    font-weight: bold;
+}
+
 /* Responsive */
 @media (max-width: 800px) {
     .deck-editor-layout {
