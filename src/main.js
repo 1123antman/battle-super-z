@@ -8,11 +8,29 @@ console.log("Battle Super Z Client Loaded");
 const socketUrl = import.meta.env.PROD ? undefined : `http://${window.location.hostname}:3000`;
 const socket = io(socketUrl);
 
+// --- Stats Management ---
+const saveWinLoss = (result) => {
+  const stats = JSON.parse(localStorage.getItem('battle_stats') || '{"win":0, "loss":0}');
+  if (result === 'win') stats.win++;
+  if (result === 'loss') stats.loss++;
+  localStorage.setItem('battle_stats', JSON.stringify(stats));
+  console.log("Stats Updated:", stats);
+};
+
 // DOM Elements
 const views = {
   title: document.getElementById('title-screen'),
-  lobby: null, // Dynamic
-  battle: null, // Dynamic
+  lobby: null,
+  battle: null,
+  banner: null // [NEW] Turn banner
+};
+
+// --- Sound System ---
+const playSE = (type) => {
+  // Placeholder for actual sound files
+  console.log(`[SE] Playing: ${type}`);
+  // const audio = new Audio(`/sounds/${type}.mp3`);
+  // audio.play();
 };
 
 const app = document.getElementById('app');
@@ -53,6 +71,15 @@ function showView(viewName, contentHTML = '') {
     if (viewName === 'battle') setupBattleEvents();
   }
 }
+
+window.sendChat = (msg) => {
+  socket.emit('chat_message', { roomId: currentRoomId, msg });
+};
+
+socket.on('chat_received', (data) => {
+  battleLogs.push(`💬 ${data.playerId.slice(0, 4)}: ${data.msg}`);
+  updateLogs();
+});
 
 // --- Title Screen Logic ---
 
@@ -151,24 +178,70 @@ window.endTurn = () => {
   socket.emit('end_turn');
 };
 
+socket.on('game_over', (data) => {
+  const isWinner = data.winnerId === myPlayerId;
+  saveWinLoss(isWinner ? 'win' : 'loss');
+  alert(isWinner ? "勝利しました！" : "敗北...");
+  goToHome();
+});
+
 const battleLogs = [];
 
 socket.on('action_performed', (data) => {
   console.log("Action:", data);
+
+  // [NEW] Visual Feedback for impact
+  if (data.logs && data.logs.length > 0) {
+    const logsText = data.logs.join(' ');
+    if (logsText.includes('攻撃') || logsText.includes('💥')) {
+      triggerShake();
+      playSE('attack');
+    } else if (logsText.includes('回復')) {
+      playSE('heal');
+    } else if (logsText.includes('召喚')) {
+      playSE('summon');
+    }
+  }
+
   if (data.cardData && data.cardData.image) {
-    // Custom card image log
     battleLogs.push(`<div class="log-card"><img src="${data.cardData.image}" width="50" height="50"> <span>${data.cardData.name || 'Card'}</span> used!</div>`);
   }
   if (data.logs) battleLogs.push(...data.logs);
   renderBattle(data.gameState);
 });
 
+function triggerShake() {
+  const battle = document.querySelector('.battle-container');
+  if (battle) {
+    battle.classList.add('shake');
+    setTimeout(() => battle.classList.remove('shake'), 500);
+  }
+}
+
 socket.on('turn_changed', (data) => {
   console.log("Turn Changed:", data);
   battleLogs.push(`--- ターン交代 ---`);
-  localUsedTypes = []; // Reset local tracking
+  localUsedTypes = [];
   renderBattle(data.gameState);
+
+  if (data.gameState.currentTurnPlayerId === myPlayerId) {
+    showTurnBanner("自分のターン");
+    playSE('turn_start');
+  }
 });
+
+function showTurnBanner(text) {
+  let banner = document.querySelector('.turn-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.className = 'turn-banner';
+    document.body.appendChild(banner);
+  }
+  banner.innerText = text;
+  banner.classList.remove('show');
+  void banner.offsetWidth; // trigger reflow
+  banner.classList.add('show');
+}
 
 socket.on('error_message', (msg) => {
   alert(msg);
@@ -257,6 +330,27 @@ function renderCardCreator() {
             <small>※未入力時はパワーに応じて自動計算されます</small>
           </div>
           <div class="input-group">
+            <label>エネルギーコスト</label>
+            <input type="number" id="card-cost" value="2" min="1" max="10" oninput="updatePreview()">
+          </div>
+          <div class="input-group">
+             <label>演出エフェクト</label>
+             <select id="card-vfx" onchange="updatePreview()">
+               <option value="default">標準</option>
+               <option value="fire">爆炎</option>
+               <option value="ice">氷結</option>
+               <option value="thunder">雷撃</option>
+             </select>
+          </div>
+          <div class="input-group">
+             <label>フレームデザイン</label>
+             <select id="card-frame" onchange="updatePreview()">
+               <option value="neon">ネオン (標準)</option>
+               <option value="gold">ゴールド (豪華)</option>
+               <option value="dark">ダーク (漆黒)</option>
+             </select>
+          </div>
+          <div class="input-group">
             <label>画像ファイル (正方形推奨)</label>
             <input type="file" id="card-image" accept="image/*" onchange="handleImageUpload(this)">
           </div>
@@ -309,9 +403,10 @@ window.updatePreview = () => {
     power = 20;
     document.getElementById('card-power').value = 20;
   }
-  const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
   const element = document.getElementById('card-element').value;
   const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
+  const frame = document.getElementById('card-frame').value;
+  const vfx = document.getElementById('card-vfx').value;
 
   // Background
   ctx.fillStyle = '#1a1a24';
@@ -322,22 +417,19 @@ window.updatePreview = () => {
   else if (effect === 'heal') ctx.fillStyle = '#113311';
   ctx.fillRect(0, 0, 200, 300);
 
-  // Image
-  if (loadedImage) {
-    // Draw image centered/cropped to upper area
-    ctx.drawImage(loadedImage, 10, 40, 180, 150);
-  } else {
-    ctx.fillStyle = '#333';
-    ctx.fillRect(10, 40, 180, 150);
-    ctx.fillStyle = '#555';
-    ctx.font = '20px Arial';
-    ctx.fillText("No Image", 60, 120);
-  }
-
-  // Frame
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = '#00ffcc';
+  // Frame based on choice
+  ctx.lineWidth = 6;
+  if (frame === 'gold') ctx.strokeStyle = '#ffd700';
+  else if (frame === 'dark') ctx.strokeStyle = '#444';
+  else ctx.strokeStyle = '#00ffcc';
   ctx.strokeRect(5, 5, 190, 290);
+
+  // [VFX Indicator in preview]
+  if (vfx !== 'default') {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '10px Arial';
+    ctx.fillText(`VFX: ${vfx}`, 160, 20);
+  }
 
   // Text
   ctx.fillStyle = '#fff';
@@ -365,8 +457,8 @@ window.saveCustomCard = () => {
   if (power > 20) power = 20;
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
 
-  const element = document.getElementById('card-element').value;
-  const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
+  const frame = document.getElementById('card-frame').value;
+  const vfx = document.getElementById('card-vfx').value;
 
   const imageData = canvas.toDataURL('image/png');
 
@@ -377,6 +469,8 @@ window.saveCustomCard = () => {
     effectId: effect,
     element: element,
     cost: cost,
+    frame: frame,
+    vfx: vfx,
     target: effect === 'attack' ? 'enemy' : 'self',
     image: imageData,
     isCustom: true
@@ -492,6 +586,12 @@ function renderBattle(gameState) {
 
       <div class="log-area" id="battle-log"></div>
 
+      <div class="quick-chat">
+         <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
+         <button onclick="sendChat('強い！')">🔥 強い！</button>
+         <button onclick="sendChat('参りました')">🏳️ 参りました</button>
+      </div>
+
       <div class="my-area">
          <div class="home-btn-container">
             <button onclick="goToHome(true)" class="home-btn-mini">ホーム</button>
@@ -550,13 +650,16 @@ function renderBattle(gameState) {
 }
 
 window.playCardWithObj = (card, actionType = 'use') => {
-  // Prevent double submissions immediately UI-side for THIS TYPE
-  // We can't just disable ALL buttons anymore.
-  // But we want to disable THIS button and others of same type.
-  if (actionType === 'summon') {
-    localUsedTypes.push('summon');
-  } else {
-    localUsedTypes.push(card.effectId);
+  if (!currentRoomId) return;
+
+  // [NEW] Animation: Fly to target
+  const cardElement = event ? event.currentTarget.closest('.card-wrapper') : null;
+  if (cardElement) {
+    const tx = (window.innerWidth / 2) - cardElement.getBoundingClientRect().left - 50;
+    const ty = -200;
+    cardElement.style.setProperty('--tx', `${tx}px`);
+    cardElement.style.setProperty('--ty', `${ty}px`);
+    cardElement.classList.add('card-flying');
   }
 
   // Manually update buttons state immediately for responsiveness
@@ -616,11 +719,16 @@ window.playCardWithObj = (card, actionType = 'use') => {
 
   // Send full card data including optional image
   socket.emit('play_card', {
+    roomId: currentRoomId,
     effectId: card.effectId,
     power: card.power,
     targetId: targetId,
     name: card.name,
-    image: card.image, // Send base64
+    image: card.image,
+    element: card.element || 'none',
+    cost: card.cost || Math.max(1, Math.floor(card.power / 5)),
+    isCustom: card.isCustom || false,
+    id: card.id,
     actionType: actionType
   });
 };

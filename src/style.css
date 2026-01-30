@@ -569,3 +569,86 @@ canvas {
     z-index: 10;
 }
 
+
+/* Animations & SFX */
+@keyframes fly-to-target {
+    0% { transform: scale(1) translate(0, 0); z-index: 100; }
+    50% { transform: scale(1.2) translate(var(--tx), var(--ty)); rotate: 10deg; }
+    100% { transform: scale(0.5) translate(var(--tx), var(--ty)); opacity: 0; }
+}
+.card-flying {
+    animation: fly-to-target 0.6s ease-in forwards;
+    pointer-events: none;
+}
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+.shake {
+    animation: shake 0.5s;
+    animation-iteration-count: infinite;
+}
+
+/* Turn Banner */
+.turn-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 255, 204, 0.9);
+    color: black;
+    padding: 20px 60px;
+    font-size: 3rem;
+    font-weight: bold;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 0 50px rgba(0, 255, 204, 0.5);
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.turn-banner.show {
+    opacity: 1;
+    animation: banner-in-out 1.5s ease-in-out forwards;
+}
+@keyframes banner-in-out {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+
+/* Quick Chat Styles */
+.quick-chat {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+}
+.quick-chat button {
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.quick-chat button:hover {
+    background: #444;
+    transform: scale(1.1);
+}
+
