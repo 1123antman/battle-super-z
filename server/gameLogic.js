@@ -17,7 +17,8 @@ class GameLogic {
                 usedEffectTypes: [], // Track types of effects used this turn
                 field: { // Summoned card area
                     summonedCard: null // Holds { name, power, image }
-                }
+                },
+                usedCustomCardIds: [] // [NEW] Track custom cards used this game
             };
         });
 
@@ -42,6 +43,11 @@ class GameLogic {
             return { error: `You have already used a ${cardData.effectId} card this turn` };
         }
 
+        // [NEW] Check if this is a custom card and if it has been used before (1 per game)
+        if (cardData.isCustom && actor.usedCustomCardIds.includes(cardData.id)) {
+            return { error: 'This custom card can only be used once per game' };
+        }
+
         // Basic Effect Logic
         // In a full game, effectId would map to server-side logic.
         // For prototype, we interpret basic types.
@@ -59,8 +65,17 @@ class GameLogic {
             if (cardData.effectId === 'heal' || cardData.effectId === 'defense') {
                 targets = [actor];
             } else {
-                // Pick a random enemy if not specified? Or error?
-                // Let's assume client MUST specify target for attacks
+                // [NEW] Handle Summoned Unit Mitigation for single attacks
+                // Find primary opponent (for 1v1 prototype)
+                const opponentId = Object.keys(state.players).find(id => id !== playerId);
+                const opponent = state.players[opponentId];
+
+                if (opponent && opponent.field && opponent.field.summonedCard) {
+                    // Attack hits the summoned unit first
+                    targets = [{ type: 'unit', ownerId: opponentId, unit: opponent.field.summonedCard }];
+                } else if (opponent) {
+                    targets = [opponent];
+                }
             }
         }
 
@@ -87,6 +102,21 @@ class GameLogic {
                 case 'attack':
                     targets.forEach(target => {
                         let damage = parseInt(cardData.power) || 10;
+
+                        // [NEW] Handle unit target
+                        if (target.type === 'unit') {
+                            const unit = target.unit;
+                            const owner = state.players[target.ownerId];
+                            resultLog.push(`${actor.id} attacks ${owner.id}'s ${unit.name}!`);
+                            if (damage > unit.power) {
+                                resultLog.push(`Destroyed ${unit.name}!`);
+                                owner.field.summonedCard = null;
+                            } else {
+                                resultLog.push(`${unit.name} survived the attack.`);
+                            }
+                            return;
+                        }
+
                         // Apply Shield mitigation
                         if (target.shield > 0) {
                             if (target.shield >= damage) {
@@ -124,6 +154,11 @@ class GameLogic {
         if (!actor.usedEffectTypes) actor.usedEffectTypes = [];
         const typeToTrack = (cardData.actionType === 'summon') ? 'summon' : cardData.effectId;
         actor.usedEffectTypes.push(typeToTrack);
+
+        // [NEW] Track custom card usage
+        if (cardData.isCustom) {
+            actor.usedCustomCardIds.push(cardData.id);
+        }
 
         return {
             success: true,

@@ -201,8 +201,8 @@ function renderCardCreator() {
             <input type="text" id="card-name" value="マイカード" oninput="updatePreview()">
           </div>
           <div class="input-group">
-            <label>攻撃力 / 効果値</label>
-             <input type="number" id="card-power" value="10" oninput="updatePreview()">
+            <label>攻撃力 / 効果値 (最大 20)</label>
+             <input type="number" id="card-power" value="10" max="20" min="1" oninput="updatePreview()">
           </div>
           <div class="input-group">
              <label>効果タイプ</label>
@@ -210,7 +210,21 @@ function renderCardCreator() {
                <option value="attack">攻撃 (Attack)</option>
                <option value="heal">回復 (Heal)</option>
                <option value="defense">防御 (Defense)</option>
-               <option value="special">特殊 (Special)</option>
+             </select>
+          </div>
+          <div id="special-sub-group" class="input-group" style="display:none;">
+             <label>挙動タイプ</label>
+             <select id="special-behavior" onchange="updatePreview()">
+               <option value="attack">攻撃として扱う</option>
+               <option value="heal">回復として扱う</option>
+               <option value="defense">防御として扱う</option>
+             </select>
+          </div>
+          <div class="input-group">
+             <label>カード種別</label>
+             <select id="is-special" onchange="toggleSpecialUI()">
+               <option value="normal">通常カード</option>
+               <option value="special">特殊カード</option>
              </select>
           </div>
           <div class="input-group">
@@ -229,6 +243,13 @@ function renderCardCreator() {
   showView('creator', html);
   setTimeout(updatePreview, 100); // Wait for DOM
 }
+
+window.toggleSpecialUI = () => {
+  const isSpecial = document.getElementById('is-special').value === 'special';
+  document.getElementById('special-sub-group').style.display = isSpecial ? 'block' : 'none';
+  document.getElementById('card-effect').parentElement.style.display = isSpecial ? 'none' : 'block';
+  updatePreview();
+};
 
 let loadedImage = null;
 
@@ -252,9 +273,14 @@ window.updatePreview = () => {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
+  const isSpecial = document.getElementById('is-special').value === 'special';
   const name = document.getElementById('card-name').value;
-  const power = document.getElementById('card-power').value;
-  const effect = document.getElementById('card-effect').value;
+  let power = parseInt(document.getElementById('card-power').value) || 0;
+  if (power > 20) {
+    power = 20;
+    document.getElementById('card-power').value = 20;
+  }
+  const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
 
   // Background
   ctx.fillStyle = '#1a1a24';
@@ -294,9 +320,11 @@ window.updatePreview = () => {
 
 window.saveCustomCard = () => {
   const canvas = document.getElementById('card-canvas');
+  const isSpecial = document.getElementById('is-special').value === 'special';
   const name = document.getElementById('card-name').value;
-  const power = parseInt(document.getElementById('card-power').value) || 0;
-  const effect = document.getElementById('card-effect').value;
+  let power = parseInt(document.getElementById('card-power').value) || 0;
+  if (power > 20) power = 20;
+  const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
 
   const imageData = canvas.toDataURL('image/png');
 
