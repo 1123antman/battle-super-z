@@ -579,7 +579,8 @@ canvas {
     filter: grayscale(1) brightness(0.7);
     opacity: 0.5;
     pointer-events: none;
-    order: 100;
+    /* order: 100; */
+    /* 無効化されても位置を動かさない */
 }
 
 .card-wrapper:not(.card-disabled):hover {

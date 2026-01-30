@@ -560,7 +560,7 @@ function renderBattle(gameState) {
     return !isMyTurn || alreadyUsedType || alreadyUsedCustom || (myPlayer.energy < cost);
   };
 
-  const sortedHand = [...hand].sort((a, b) => checkDisabled(a) - checkDisabled(b));
+  const sortedHand = [...hand]; //元の順序を維持
 
   const html = `
     <div class="battle-container">
