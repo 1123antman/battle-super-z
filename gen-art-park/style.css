@@ -1,0 +1,218 @@
+:root {
+    --bg-color: #0a0a0a;
+    --text-color: #e0e0e0;
+    --primary-color: #00ff88;
+    --secondary-color: #7000ff;
+    --accent-color: #00d2ff;
+    --surface-color: #1a1a1a;
+    --surface-border: #333;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-main: 'Outfit', sans-serif;
+
+    --header-height: 70px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+.main-header {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--surface-border);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 1.5rem;
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    color: transparent;
+    letter-spacing: -0.5px;
+}
+
+.main-nav {
+    display: flex;
+    gap: 1.rem;
+}
+
+.main-nav button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-weight: 400;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    opacity: 0.7;
+}
+
+.main-nav button:hover,
+.main-nav button.active {
+    opacity: 1;
+    background: var(--glass-bg);
+    color: var(--primary-color);
+}
+
+/* Main Content */
+#content-area {
+    margin-top: var(--header-height);
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.page {
+    display: none;
+    padding: 2rem;
+    animation: fadeIn 0.5s ease;
+    height: calc(100vh - var(--header-height));
+    /* Full viewport height minus header */
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hero Section */
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    background: radial-gradient(circle at center, rgba(0, 210, 255, 0.1) 0%, transparent 70%);
+}
+
+.hero h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+    background: linear-gradient(to right, #fff, #aaa);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.hero p {
+    font-size: 1.5rem;
+    color: #888;
+    margin-bottom: 3rem;
+    max-width: 600px;
+}
+
+.explore-btn {
+    background: var(--primary-color);
+    color: #000;
+    border: none;
+    padding: 1rem 2.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.explore-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+/* Footer */
+.main-footer {
+    text-align: center;
+    padding: 1.5rem;
+    border-top: 1px solid var(--surface-border);
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Utility classes for canvas containers */
+.canvas-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--surface-color);
+    border-radius: 12px;
+    border: 1px solid var(--surface-border);
+    overflow: hidden;
+    position: relative;
+}
+
+canvas {
+    display: block;
+}
+
+.controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 1rem;
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.controls button {
+    background: var(--surface-border);
+    color: var(--text-color);
+    border: 1px solid var(--glass-border);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.controls button:hover {
+    background: var(--primary-color);
+    color: #000;
+}
