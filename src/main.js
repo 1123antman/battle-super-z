@@ -132,10 +132,6 @@ socket.on('game_started', (gameState) => {
 
 // --- Battle Logic ---
 
-// --- Battle Logic ---
-
-
-
 window.endTurn = () => {
   socket.emit('end_turn');
 };
@@ -374,6 +370,17 @@ function renderBattle(gameState) {
             <div class="player-name">Player ${p.id.slice(0, 4)}</div>
             <div class="hp-bar"><div class="hp-fill" style="width: ${(p.hp / p.maxHp) * 100}%"></div></div>
             <div class="stats">HP: ${p.hp} | Shield: ${p.shield}</div>
+            <div class="summon-field">
+               ${p.field && p.field.summonedCard ? `
+                 <div class="summoned-unit">
+                   ${p.field.summonedCard.image ? `<img src="${p.field.summonedCard.image}" class="unit-img">` : ''}
+                   <div class="unit-info">
+                      ⚔️ ${p.field.summonedCard.power} <br>
+                      ${p.field.summonedCard.name}
+                   </div>
+                 </div>
+               ` : '<div class="empty-field">Empty Field</div>'}
+            </div>
           </div>
         `).join('')}
       </div>
@@ -385,20 +392,37 @@ function renderBattle(gameState) {
           <div class="player-name">YOU</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
+            <div class="summon-field">
+               ${myPlayer.field && myPlayer.field.summonedCard ? `
+                 <div class="summoned-unit self-unit">
+                   ${myPlayer.field.summonedCard.image ? `<img src="${myPlayer.field.summonedCard.image}" class="unit-img">` : ''}
+                   <div class="unit-info">
+                      ⚔️ ${myPlayer.field.summonedCard.power} <br>
+                      ${myPlayer.field.summonedCard.name}
+                   </div>
+                 </div>
+               ` : '<div class="empty-field">Empty Field</div>'}
+            </div>
         </div>
 
         <div class="hand-area">
           ${hand.map((card, idx) => `
-            <button class="card-btn" 
-              onclick='playCardWithObj(${JSON.stringify(card)})' 
-            <button class="card-btn" 
-              onclick='playCardWithObj(${JSON.stringify(card)})' 
-              ${!isMyTurn || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId)) || localUsedTypes.includes(card.effectId) ? 'disabled' : ''}
-              style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}"
-            >
-              ${!card.image ? card.name : ''}<br>
-              <small>${card.effectId} (${card.power})</small>
-            </button>
+            <div class="card-wrapper">
+                <button class="card-btn" 
+                  onclick='playCardWithObj(${JSON.stringify(card)}, "use")' 
+                  ${!isMyTurn || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId)) || localUsedTypes.includes(card.effectId) ? 'disabled' : ''}
+                  style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}"
+                >
+                  ${!card.image ? card.name : ''}<br>
+                  <small>${card.effectId} (${card.power})</small>
+                </button>
+                ${card.effectId === 'attack' ? `
+                    <button class="summon-btn"
+                        onclick='playCardWithObj(${JSON.stringify(card)}, "summon")'
+                        ${!isMyTurn || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) || localUsedTypes.includes("summon") ? 'disabled' : ''}
+                    >召喚</button>
+                ` : ''}
+            </div>
           `).join('')}
            <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>
              ターン終了
@@ -412,14 +436,19 @@ function renderBattle(gameState) {
   updateLogs();
 }
 
-window.playCardWithObj = (card) => {
+window.playCardWithObj = (card, actionType = 'use') => {
   // Prevent double submissions immediately UI-side for THIS TYPE
   // We can't just disable ALL buttons anymore.
   // But we want to disable THIS button and others of same type.
-  localUsedTypes.push(card.effectId);
+  if (actionType === 'summon') {
+    localUsedTypes.push('summon');
+  } else {
+    localUsedTypes.push(card.effectId);
+  }
 
   // Manually update buttons state immediately for responsiveness
-  const buttons = document.querySelectorAll('.card-btn');
+  const buttons = document.querySelectorAll('.card-btn, .summon-btn');
+  // buttons from previous declaration removed
   // Re-run the disable logic manually or just wait for renderBattle? 
   // renderBattle is triggered by socket event, which might have lag.
   // Let's force a disable style on buttons matching this type.
@@ -478,7 +507,8 @@ window.playCardWithObj = (card) => {
     power: card.power,
     targetId: targetId,
     name: card.name,
-    image: card.image // Send base64
+    image: card.image, // Send base64
+    actionType: actionType
   });
 };
 

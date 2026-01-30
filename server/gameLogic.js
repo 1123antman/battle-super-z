@@ -14,10 +14,13 @@ class GameLogic {
                 status: [], // poison, paralysis, etc.
                 handSize: 5, // Logic for actual hand content depends on if server tracks cards
                 // For this prototype, server tracks stats, client sends card data (verified by effectId)
-                hasActed: false, // DEPRECATED: Track if player has acted this turn
                 usedEffectTypes: [], // Track types of effects used this turn
+                field: { // Summoned card area
+                    summonedCard: null // Holds { name, power, image }
+                }
             };
         });
+
 
         // Randomize starting player
         room.gameState.currentTurnPlayerId = room.players[Math.floor(Math.random() * room.players.length)];
@@ -61,45 +64,66 @@ class GameLogic {
             }
         }
 
-        switch (cardData.effectId) {
-            case 'attack':
-                targets.forEach(target => {
-                    let damage = parseInt(cardData.power) || 10;
-                    // Apply Shield mitigation
-                    if (target.shield > 0) {
-                        if (target.shield >= damage) {
-                            target.shield -= damage;
-                            damage = 0;
-                        } else {
-                            damage -= target.shield;
-                            target.shield = 0;
+        if (cardData.actionType === 'summon') {
+            if (cardData.effectId !== 'attack') {
+                return { error: 'Only Attack cards can be summoned' };
+            }
+            // Handle Summon Logic
+            // Overwrite existing card? Yes, per plan.
+            const previouslySummoned = actor.field.summonedCard;
+            actor.field.summonedCard = {
+                name: cardData.name || 'Summoned Unit',
+                power: parseInt(cardData.power) || 0,
+                image: cardData.image || null,
+                effectId: cardData.effectId
+            };
+            resultLog.push(`${actor.id} summons ${actor.field.summonedCard.name} to the field!`);
+            if (previouslySummoned) {
+                resultLog.push(`(Replaced ${previouslySummoned.name})`);
+            }
+        } else {
+            // Normal "Use" Logic
+            switch (cardData.effectId) {
+                case 'attack':
+                    targets.forEach(target => {
+                        let damage = parseInt(cardData.power) || 10;
+                        // Apply Shield mitigation
+                        if (target.shield > 0) {
+                            if (target.shield >= damage) {
+                                target.shield -= damage;
+                                damage = 0;
+                            } else {
+                                damage -= target.shield;
+                                target.shield = 0;
+                            }
                         }
-                    }
-                    target.hp = Math.max(0, target.hp - damage);
-                    resultLog.push(`${actor.id} deals ${damage} damage to ${target.id}`);
-                });
-                break;
+                        target.hp = Math.max(0, target.hp - damage);
+                        resultLog.push(`${actor.id} deals ${damage} damage to ${target.id}`);
+                    });
+                    break;
 
-            case 'heal':
-                let heal = parseInt(cardData.power) || 10;
-                actor.hp = Math.min(actor.maxHp, actor.hp + heal);
-                resultLog.push(`${actor.id} heals ${heal} HP`);
-                break;
+                case 'heal':
+                    let heal = parseInt(cardData.power) || 10;
+                    actor.hp = Math.min(actor.maxHp, actor.hp + heal);
+                    resultLog.push(`${actor.id} heals ${heal} HP`);
+                    break;
 
-            case 'defense':
-                let shield = parseInt(cardData.power) || 10;
-                actor.shield += shield;
-                resultLog.push(`${actor.id} gains ${shield} Shield`);
-                break;
+                case 'defense':
+                    let shield = parseInt(cardData.power) || 10;
+                    actor.shield += shield;
+                    resultLog.push(`${actor.id} gains ${shield} Shield`);
+                    break;
 
-            // Add more effects here
-            default:
-                resultLog.push(`Unknown effect ${cardData.effectId}`);
+                // Add more effects here
+                default:
+                    resultLog.push(`Unknown effect ${cardData.effectId}`);
+            }
         }
 
         // Track that this effect type has been used
         if (!actor.usedEffectTypes) actor.usedEffectTypes = [];
-        actor.usedEffectTypes.push(cardData.effectId);
+        const typeToTrack = (cardData.actionType === 'summon') ? 'summon' : cardData.effectId;
+        actor.usedEffectTypes.push(typeToTrack);
 
         return {
             success: true,
