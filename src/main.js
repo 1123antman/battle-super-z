@@ -189,8 +189,14 @@ socket.on('player_joined', (data) => {
 
 socket.on('game_started', (gameState) => {
   console.log("Game Started!", gameState);
+  battleLogs.length = 0; // Reset logs for new game
   renderBattle(gameState);
 });
+
+function setupBattleEvents() {
+  // Add battle-specific listeners here if needed in future
+  console.log("Battle Events Setup");
+}
 
 // --- Battle Logic ---
 
@@ -269,28 +275,10 @@ function showTurnBanner(text) {
 }
 
 socket.on('error_message', (msg) => {
-  alert(msg);
-  alert(msg);
-  // localUsedTypes = []; // We might not want to reset ALL if partial fail, but simpler to reset on error or just trust user knows?
-  // Actually, if error means "already used", we should KEEP it.
-  // If error means "invalid target", we might want to allow retry.
-  // For now, let's just reset the locked buttons so they can try again (or try another card).
-  const buttons = document.querySelectorAll('.card-btn');
+  alert("エラー: " + msg);
+  const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = false);
-
-  // Ideally we remove the LAST attempted type from localUsedTypes if it failed.
-  // But strictly, we don't know WHICH one failed here easily without tracking lastAction.
-  // Let's just blindly re-enable UI. The server will reject invalid actions anyway.
-  renderBattle(views.battle.lastGameState);
-  // actually renderBattle triggers from action_performed usually. 
-  // If error, we might be stuck. reload? 
-  // Simple: just un-disable buttons manually or we need stored state.
-  // For now, let's just reload the page or assume state is consistent.
-  // Better: request state? or just accept that renderBattle usually has state.
-  // Hack: The UI might be stuck disabled if we don't re-render.
-  // Let's just reset allow user to try again by removing disabled attribute from buttons?
-  const allButtons = document.querySelectorAll('.card-btn');
-  allButtons.forEach(btn => btn.disabled = false);
+  // Re-render UI to ensure current state is consistent (lastGameState should be tracked better if needed)
 });
 
 function updateLogs() {
