@@ -38,7 +38,7 @@ class GameLogic {
         const actor = state.players[playerId];
 
         if (state.currentTurnPlayerId !== playerId) {
-            return { error: 'Not your turn' };
+            return { error: 'Not your turn (logic check)' };
         }
 
         const isBasic = cardData.id && cardData.id.startsWith('base_');

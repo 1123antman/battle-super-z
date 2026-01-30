@@ -87,7 +87,8 @@ window.sendChat = (msg) => {
 };
 
 socket.on('chat_received', (data) => {
-  battleLogs.push(`💬 ${data.playerId.slice(0, 4)}: ${data.msg}`);
+  const name = data.playerName || data.playerId.slice(0, 4);
+  battleLogs.push(`💬 <strong>${name}</strong>: ${data.msg}`);
   updateLogs();
 });
 

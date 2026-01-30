@@ -116,12 +116,25 @@ io.on('connection', (socket) => {
 
         if (room.gameState.currentTurnPlayerId !== socket.id) {
             console.warn(`[TURN_REJECTED] Not actor's turn. Actor: ${socket.id}, Expected: ${room.gameState.currentTurnPlayerId}`);
-            socket.emit('error_message', 'Not your turn');
+            socket.emit('error_message', 'Not your turn (server check)');
             return;
         }
 
         const turnResult = GameLogic.endTurn(room);
         io.to(roomId).emit('turn_changed', turnResult);
+    });
+
+    socket.on('chat_message', (data) => {
+        const result = RoomManager.getRoomIdAndState(socket.id);
+        if (!result) return;
+        const { roomId, room } = result;
+        const playerName = room.playerNames[socket.id] || '名無し';
+
+        io.to(roomId).emit('chat_received', {
+            playerId: socket.id,
+            playerName: playerName,
+            msg: data.msg
+        });
     });
 
     // --- Disconnect ---
