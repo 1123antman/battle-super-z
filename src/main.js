@@ -243,6 +243,20 @@ function renderCardCreator() {
              </select>
           </div>
           <div class="input-group">
+             <label>属性 (エレメント)</label>
+             <select id="card-element" onchange="updatePreview()">
+               <option value="none">なし (None)</option>
+               <option value="fire">火 (Fire)</option>
+               <option value="water">水 (Water)</option>
+               <option value="wood">木 (Wood)</option>
+             </select>
+          </div>
+          <div class="input-group">
+            <label>エネルギーコスト</label>
+            <input type="number" id="card-cost" value="2" min="1" max="10" oninput="updatePreview()">
+            <small>※未入力時はパワーに応じて自動計算されます</small>
+          </div>
+          <div class="input-group">
             <label>画像ファイル (正方形推奨)</label>
             <input type="file" id="card-image" accept="image/*" onchange="handleImageUpload(this)">
           </div>
@@ -361,8 +375,29 @@ window.saveCustomCard = () => {
   showView('title');
 };
 
+const STARTER_DECKS = {
+  balance: [
+    { name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
+    { name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
+    { name: "救急キット", effectId: "heal", power: 10, cost: 2 }
+  ],
+  aggro: [
+    { name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
+    { name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
+    { name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 }
+  ],
+  tank: [
+    { name: "大盾", defense: "defense", power: 20, element: "wood", cost: 4 },
+    { name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
+    { name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
+  ]
+};
+
 function getMyCards() {
-  return JSON.parse(localStorage.getItem('my_cards') || '[]');
+  const custom = JSON.parse(localStorage.getItem('my_cards') || '[]');
+  // 初期状態でカードがない場合のためにスターターを混ぜる（または選択させる）
+  // ここでは単純化のため、全プレイヤーに「バランス」デッキを配布
+  return [...STARTER_DECKS.balance, ...custom];
 }
 
 // Modify renders to use custom cards
@@ -392,14 +427,26 @@ function renderBattle(gameState) {
   const isMyTurn = gameState.currentTurnPlayerId === myPlayerId;
   const opponents = Object.values(gameState.players).filter(p => p.id !== myPlayerId);
 
-  const defaultCards = [
-    { name: "アタック", effectId: "attack", power: 10, target: "enemy" },
-    { name: "ヒール", effectId: "heal", power: 15, target: "self" },
-    { name: "シールド", effectId: "defense", power: 10, target: "self" }
-  ];
-
   const customCards = getMyCards();
-  const hand = [...defaultCards, ...customCards];
+  const baseCards = [
+    { name: "基本攻撃", effectId: "attack", power: 10, target: "enemy", cost: 2, id: "base_atk" },
+    { name: "基本回復", effectId: "heal", power: 10, target: "self", cost: 2, id: "base_heal" }
+  ];
+  const hand = [...baseCards, ...customCards];
+
+  // [NEW] Separate hand into usable and used/disabled
+  const checkDisabled = (card) => {
+    const alreadyUsedEffect = myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId);
+    const alreadyUsedCustom = card.isCustom && myPlayer.usedCustomCardIds && myPlayer.usedCustomCardIds.includes(card.id);
+    const energyShortage = myPlayer.energy < (card.cost || Math.max(1, Math.floor(card.power / 5)));
+    return !isMyTurn || alreadyUsedEffect || alreadyUsedCustom || energyShortage;
+  };
+
+  const sortedHand = [...hand].sort((a, b) => {
+    const aDisabled = checkDisabled(a);
+    const bDisabled = checkDisabled(b);
+    return aDisabled - bDisabled; // Disabled cards go to the end (right)
+  });
 
   let html = `
     <div class="battle-container">
@@ -438,6 +485,7 @@ function renderBattle(gameState) {
           <div class="player-name">自分</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
+          <div class="energy-display">🔋 エネルギー: ${myPlayer.energy} / ${myPlayer.maxEnergy} (+${myPlayer.energyPerTurn})</div>
             <div class="summon-field">
                ${myPlayer.field && myPlayer.field.summonedCard ? `
                  <div class="summoned-unit self-unit">
@@ -452,24 +500,28 @@ function renderBattle(gameState) {
         </div>
 
         <div class="hand-area">
-          ${hand.map((card, idx) => `
-            <div class="card-wrapper">
+          ${sortedHand.map((card, idx) => {
+    const isDisabled = checkDisabled(card);
+    const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
+    return `
+            <div class="card-wrapper ${isDisabled ? 'card-disabled' : ''}">
                 <button class="card-btn" 
                   onclick='playCardWithObj(${JSON.stringify(card)}, "use")' 
-                  ${!isMyTurn || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId)) || localUsedTypes.includes(card.effectId) ? 'disabled' : ''}
+                  ${isDisabled ? 'disabled' : ''}
                   style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}"
                 >
+                  <div class="card-cost">${cost}</div>
                   ${!card.image ? card.name : ''}<br>
-                  <small>${card.effectId} (${card.power})</small>
+                  <small>${card.element ? `${card.element} ` : ''}${card.effectId} (${card.power})</small>
                 </button>
                 ${card.effectId === 'attack' ? `
                     <button class="summon-btn"
                         onclick='playCardWithObj(${JSON.stringify(card)}, "summon")'
-                        ${!isMyTurn || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) || localUsedTypes.includes("summon") ? 'disabled' : ''}
+                        ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}
                     >召喚</button>
                 ` : ''}
             </div>
-          `).join('')}
+          `}).join('')}
            <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>
              ターン終了
            </button>

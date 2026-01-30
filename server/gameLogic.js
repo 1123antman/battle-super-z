@@ -11,14 +11,16 @@ class GameLogic {
                 hp: 100,
                 maxHp: 100,
                 shield: 0,
+                energy: 3, // [NEW] Current energy
+                maxEnergy: 10, // [NEW] Max energy cap
+                energyPerTurn: 2, // [NEW] Energy recovered each turn
                 status: [], // poison, paralysis, etc.
-                handSize: 5, // Logic for actual hand content depends on if server tracks cards
-                // For this prototype, server tracks stats, client sends card data (verified by effectId)
-                usedEffectTypes: [], // Track types of effects used this turn
-                field: { // Summoned card area
-                    summonedCard: null // Holds { name, power, image }
+                handSize: 5,
+                usedEffectTypes: [],
+                field: {
+                    summonedCard: null
                 },
-                usedCustomCardIds: [] // [NEW] Track custom cards used this game
+                usedCustomCardIds: []
             };
         });
 
@@ -43,9 +45,15 @@ class GameLogic {
             return { error: `You have already used a ${cardData.effectId} card this turn` };
         }
 
+        // [NEW] Check energy cost (default cost is power / 5, min 1)
+        const cost = Math.max(1, Math.floor((parseInt(cardData.power) || 10) / 5));
+        if (actor.energy < cost) {
+            return { error: `エネルギーが不足しています (必要: ${cost}, 現在: ${actor.energy})` };
+        }
+
         // [NEW] Check if this is a custom card and if it has been used before (1 per game)
         if (cardData.isCustom && actor.usedCustomCardIds.includes(cardData.id)) {
-            return { error: 'This custom card can only be used once per game' };
+            return { error: 'このカードはこのゲームで既に使用されています' };
         }
 
         // Basic Effect Logic
@@ -155,7 +163,10 @@ class GameLogic {
         const typeToTrack = (cardData.actionType === 'summon') ? 'summon' : cardData.effectId;
         actor.usedEffectTypes.push(typeToTrack);
 
-        // [NEW] Track custom card usage
+        // Deduct energy
+        actor.energy -= cost;
+
+        // Track custom card usage
         if (cardData.isCustom) {
             actor.usedCustomCardIds.push(cardData.id);
         }
@@ -175,7 +186,10 @@ class GameLogic {
 
         // Reset action tracking for the next player
         if (state.players[state.currentTurnPlayerId]) {
-            state.players[state.currentTurnPlayerId].usedEffectTypes = [];
+            const nextActor = state.players[state.currentTurnPlayerId];
+            nextActor.usedEffectTypes = [];
+            // [NEW] Recover energy
+            nextActor.energy = Math.min(nextActor.maxEnergy, nextActor.energy + nextActor.energyPerTurn);
         }
 
         return {
