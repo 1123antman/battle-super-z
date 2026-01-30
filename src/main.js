@@ -419,7 +419,7 @@ function getMyCards() {
   return STARTER_DECKS[deckType] || STARTER_DECKS.balance;
 }
 
-window.renderDeckSelection = () => {
+function renderDeckSelection() {
   const current = localStorage.getItem('selected_deck') || 'balance';
   const html = `
         <div class="deck-selection-container">
@@ -448,9 +448,10 @@ window.renderDeckSelection = () => {
         </div>
     `;
   showView('deck-selection', html);
-};
+}
+window.renderDeckSelection = renderDeckSelection;
 
-window.renderDeckEditor = () => {
+function renderDeckEditor() {
   const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
   const currentDeck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
   const allAvailable = [...ALL_PRESET_CARDS, ...myCards];
@@ -488,32 +489,37 @@ window.renderDeckEditor = () => {
     </div>
   `;
   showView('deck-editor', html);
-};
+}
+window.renderDeckEditor = renderDeckEditor;
 
-window.addToDeck = (card) => {
+function addToDeck(card) {
   const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
   if (deck.length >= 10) return alert("デッキは10枚までです");
   deck.push(card);
   localStorage.setItem('my_custom_deck', JSON.stringify(deck));
   renderDeckEditor();
-};
+}
+window.addToDeck = addToDeck;
 
-window.removeFromDeck = (index) => {
+function removeFromDeck(index) {
   const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
   deck.splice(index, 1);
   localStorage.setItem('my_custom_deck', JSON.stringify(deck));
   renderDeckEditor();
-};
+}
+window.removeFromDeck = removeFromDeck;
 
-window.saveDeck = () => {
+function saveDeck() {
   alert("デッキを保存しました");
   renderDeckSelection();
-};
+}
+window.saveDeck = saveDeck;
 
-window.selectDeck = (type) => {
+function selectDeck(type) {
   localStorage.setItem('selected_deck', type);
   renderDeckSelection();
-};
+}
+window.selectDeck = selectDeck;
 
 window.updatePreview = () => {
   const canvas = document.getElementById('card-canvas');
