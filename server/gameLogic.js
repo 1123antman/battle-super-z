@@ -49,34 +49,31 @@ class GameLogic {
         }
 
         // Basic Effect Logic
-        // In a full game, effectId would map to server-side logic.
-        // For prototype, we interpret basic types.
-
         let resultLog = [];
         let targets = [];
 
-        // Determine targets
+        // Determine initial target
+        let initialTarget = null;
         if (cardData.targetId) {
-            targets = [state.players[cardData.targetId]];
-        } else {
-            // Default to all enemies or self depending on effect? 
-            // For simplicity, let's assume client sends targetId for single target attacks.
-            // If no targetId, might be self (heal) or global (AOE).
-            if (cardData.effectId === 'heal' || cardData.effectId === 'defense') {
-                targets = [actor];
-            } else {
-                // [NEW] Handle Summoned Unit Mitigation for single attacks
-                // Find primary opponent (for 1v1 prototype)
-                const opponentId = Object.keys(state.players).find(id => id !== playerId);
-                const opponent = state.players[opponentId];
+            initialTarget = state.players[cardData.targetId];
+        } else if (cardData.effectId !== 'heal' && cardData.effectId !== 'defense') {
+            const opponentId = Object.keys(state.players).find(id => id !== playerId);
+            initialTarget = state.players[opponentId];
+        }
 
-                if (opponent && opponent.field && opponent.field.summonedCard) {
-                    // Attack hits the summoned unit first
-                    targets = [{ type: 'unit', ownerId: opponentId, unit: opponent.field.summonedCard }];
-                } else if (opponent) {
-                    targets = [opponent];
-                }
+        // Mitigation check: if target is a player and has a unit, unit takes the hit
+        if (initialTarget && initialTarget.hp !== undefined && cardData.effectId === 'attack') {
+            if (initialTarget.field && initialTarget.field.summonedCard) {
+                targets = [{ type: 'unit', ownerId: initialTarget.id, unit: initialTarget.field.summonedCard }];
+            } else {
+                targets = [initialTarget];
             }
+        } else if (initialTarget) {
+            targets = [initialTarget];
+        } else if (cardData.effectId === 'heal' || cardData.effectId === 'defense') {
+            targets = [actor];
+        } else {
+            targets = [];
         }
 
         if (cardData.actionType === 'summon') {
@@ -84,7 +81,6 @@ class GameLogic {
                 return { error: 'Only Attack cards can be summoned' };
             }
             // Handle Summon Logic
-            // Overwrite existing card? Yes, per plan.
             const previouslySummoned = actor.field.summonedCard;
             actor.field.summonedCard = {
                 name: cardData.name || 'Summoned Unit',
@@ -149,7 +145,6 @@ class GameLogic {
                     resultLog.push(`【防御】${actor.id.slice(0, 4)} がシールドを ${shield} 獲得！ (現在シールド: ${actor.shield})`);
                     break;
 
-                // Add more effects here
                 default:
                     resultLog.push(`Unknown effect ${cardData.effectId}`);
             }
@@ -182,9 +177,6 @@ class GameLogic {
         if (state.players[state.currentTurnPlayerId]) {
             state.players[state.currentTurnPlayerId].usedEffectTypes = [];
         }
-
-        // Reset turn-based stats if needed (e.g. Shield might expire?)
-        // For simplicity, keep shield until broken.
 
         return {
             nextPlayerId: state.currentTurnPlayerId,
