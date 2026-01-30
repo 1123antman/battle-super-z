@@ -8,7 +8,7 @@ class RoomManager {
         this.rooms = new Map(); // roomId -> Room Object
     }
 
-    createRoom(hostId) {
+    createRoom(hostId, playerName = '名無し') {
         let roomId = generateRoomId();
         while (this.rooms.has(roomId)) {
             roomId = generateRoomId();
@@ -17,6 +17,7 @@ class RoomManager {
         const room = {
             id: roomId,
             players: [hostId],
+            playerNames: { [hostId]: playerName },
             gameState: {
                 status: 'waiting', // waiting, playing, finished
                 turnIndex: 0,
@@ -28,13 +29,14 @@ class RoomManager {
         return roomId;
     }
 
-    joinRoom(roomId, playerId) {
+    joinRoom(roomId, playerId, playerName = '名無し') {
         const room = this.rooms.get(roomId);
         if (!room) return { error: 'Room not found' };
         if (room.players.length >= 4) return { error: 'Room full' }; // Max 4 for now
 
         if (!room.players.includes(playerId)) {
             room.players.push(playerId);
+            room.playerNames[playerId] = playerName;
         }
         return { success: true, room };
     }

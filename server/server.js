@@ -29,38 +29,54 @@ io.on('connection', (socket) => {
 
     // --- Room Management ---
 
-    socket.on('create_room', (callback) => {
-        const roomId = RoomManager.createRoom(socket.id);
+    socket.on('create_room', (data, callback) => {
+        // Handle both older callback-only and newer object-based args
+        if (typeof data === 'function') {
+            callback = data;
+            data = {};
+        }
+        const playerName = data.playerName || '名無し';
+        const roomId = RoomManager.createRoom(socket.id, playerName);
         socket.join(roomId);
-        callback({ roomId });
-        console.log(`Room created: ${roomId} by ${socket.id}`);
+
+        if (typeof callback === 'function') {
+            callback({ roomId });
+        }
+        console.log(`Room created: ${roomId} by ${socket.id} (${playerName})`);
     });
 
-    socket.on('join_room', (roomId, callback) => {
-        const result = RoomManager.joinRoom(roomId, socket.id);
+    socket.on('join_room', (data, callback) => {
+        // Handle both (roomId, callback) and ({roomId, playerName}, callback)
+        let roomId, playerName;
+        if (typeof data === 'string') {
+            roomId = data;
+            playerName = '名無し';
+        } else {
+            roomId = data.roomId;
+            playerName = data.playerName || '名無し';
+        }
+
+        const result = RoomManager.joinRoom(roomId, socket.id, playerName);
         if (result.error) {
-            callback({ error: result.error });
+            if (typeof callback === 'function') callback({ error: result.error });
         } else {
             socket.join(roomId);
-            callback({ success: true, room: result.room });
-            io.to(roomId).emit('player_joined', { playerId: socket.id, total: result.room.players.length });
-            console.log(`${socket.id} joined room ${roomId}`);
+            if (typeof callback === 'function') callback({ success: true, room: result.room });
+            io.to(roomId).emit('player_joined', {
+                playerId: socket.id,
+                playerName: playerName,
+                total: result.room.players.length
+            });
+            console.log(`${socket.id} (${playerName}) joined room ${roomId}`);
         }
     });
 
     // --- Game Loop ---
 
-    socket.on('start_game', () => {
+    socket.on('start_game', (data) => {
         const result = RoomManager.getRoomIdAndState(socket.id);
         if (!result) return;
         const { roomId, room } = result;
-
-        // Only host (first player?) can start? 
-        // For simplicity, anyone in room can start for now, or check index 0.
-        if (room.players[0] !== socket.id) {
-            // socket.emit('error', 'Only host can start game');
-            // return;
-        }
 
         const gameState = GameLogic.initializeGame(room);
         io.to(roomId).emit('game_started', gameState);
@@ -85,7 +101,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('end_turn', () => {
+    socket.on('end_turn', (data) => {
         const result = RoomManager.getRoomIdAndState(socket.id);
         if (!result) return;
         const { roomId, room } = result;
