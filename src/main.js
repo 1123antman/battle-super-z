@@ -22,6 +22,20 @@ let currentRoomId = null;
 let myPlayerId = null;
 let localUsedTypes = []; // Client-side fallback: list of effectIds used this turn
 
+// --- 画面遷移管理 ---
+
+window.goToHome = (confirmRequired = false) => {
+  if (confirmRequired && !confirm("タイトルに戻りますか？現在のゲーム（ルーム）から退出します。")) {
+    return;
+  }
+  if (currentRoomId) {
+    socket.emit('leave_room', currentRoomId);
+  }
+  currentRoomId = null;
+  localUsedTypes = [];
+  showView('title');
+};
+
 // --- View Management ---
 
 function showView(viewName, contentHTML = '') {
@@ -95,6 +109,7 @@ function renderLobby(roomId, playerCount) {
         <p>対戦相手を待っています...</p>
       </div>
       <button id="btn-start-game" ${playerCount < 2 ? 'disabled' : ''}>ゲーム開始</button>
+      <button onclick="goToHome()" class="secondary" style="margin-top:10px;">タイトルに戻る</button>
     </div>
   `;
   showView('lobby', html);
@@ -150,7 +165,7 @@ socket.on('action_performed', (data) => {
 
 socket.on('turn_changed', (data) => {
   console.log("Turn Changed:", data);
-  battleLogs.push(`--- Turn Change ---`);
+  battleLogs.push(`--- ターン交代 ---`);
   localUsedTypes = []; // Reset local tracking
   renderBattle(data.gameState);
 });
@@ -395,7 +410,7 @@ function renderBattle(gameState) {
       <div class="opponents-row">
         ${opponents.map(p => `
           <div class="player-card opponent" data-id="${p.id}">
-            <div class="player-name">Player ${p.id.slice(0, 4)}</div>
+            <div class="player-name">プレイヤー ${p.id.slice(0, 4)}</div>
             <div class="hp-bar"><div class="hp-fill" style="width: ${(p.hp / p.maxHp) * 100}%"></div></div>
             <div class="stats">HP: ${p.hp} | Shield: ${p.shield}</div>
             <div class="summon-field">
@@ -407,7 +422,7 @@ function renderBattle(gameState) {
                       ${p.field.summonedCard.name}
                    </div>
                  </div>
-               ` : '<div class="empty-field">Empty Field</div>'}
+               ` : '<div class="empty-field">空きフィールド</div>'}
             </div>
           </div>
         `).join('')}
@@ -416,8 +431,11 @@ function renderBattle(gameState) {
       <div class="log-area" id="battle-log"></div>
 
       <div class="my-area">
+         <div class="home-btn-container">
+            <button onclick="goToHome(true)" class="home-btn-mini">ホーム</button>
+         </div>
         <div class="player-card self">
-          <div class="player-name">YOU</div>
+          <div class="player-name">自分</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
             <div class="summon-field">
@@ -429,7 +447,7 @@ function renderBattle(gameState) {
                       ${myPlayer.field.summonedCard.name}
                    </div>
                  </div>
-               ` : '<div class="empty-field">Empty Field</div>'}
+               ` : '<div class="empty-field">空きフィールド</div>'}
             </div>
         </div>
 
