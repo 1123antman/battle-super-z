@@ -1,0 +1,336 @@
+:root {
+    --bg-color: #0d0d12;
+    --text-color: #e0e0e0;
+    --primary-color: #00ffcc;
+    --secondary-color: #ff00ff;
+    --accent-color: #ffe600;
+    --card-bg: #1a1a24;
+    --font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    width: 100%;
+    max-width: 1280px;
+    height: 100vh;
+    position: relative;
+}
+
+/* Title Screen */
+#title-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+}
+
+h1 {
+    font-size: 4rem;
+    color: var(--primary-color);
+    text-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+    margin-bottom: 3rem;
+    letter-spacing: 2px;
+}
+
+button {
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+    text-transform: uppercase;
+    margin: 0.5rem;
+}
+
+button:hover {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 15px var(--primary-color);
+}
+
+button:disabled {
+    border-color: #444;
+    color: #444;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button.secondary {
+    border-color: #666;
+    color: #888;
+}
+
+button.secondary:hover {
+    background: #333;
+    color: white;
+}
+
+input,
+select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #444;
+    color: white;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border-radius: 4px;
+    width: 240px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+}
+
+select {
+    width: 100%;
+    cursor: pointer;
+}
+
+option {
+    background: #222;
+}
+
+.join-group {
+    margin-top: 1rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Lobby */
+.center-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card-bg);
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    border: 1px solid #333;
+    width: 90%;
+    max-width: 500px;
+}
+
+.highlight {
+    color: var(--accent-color);
+    font-family: monospace;
+    font-size: 2rem;
+    margin: 0 10px;
+}
+
+.lobby-status {
+    margin: 2rem 0;
+    color: #888;
+    font-style: italic;
+}
+
+/* Battle Screen */
+.battle-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.turn-indicator {
+    text-align: center;
+    font-size: 2rem;
+    padding: 10px;
+    margin-bottom: 20px;
+    color: #666;
+    border-bottom: 2px solid #333;
+}
+
+.turn-indicator.my-turn {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    text-shadow: 0 0 10px var(--accent-color);
+}
+
+.opponents-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.player-card {
+    background: #2a2a35;
+    border: 1px solid #444;
+    padding: 15px;
+    border-radius: 8px;
+    width: 200px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.player-card.opponent {
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+}
+
+.player-card.self {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+}
+
+.hp-bar {
+    background: #111;
+    height: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.hp-fill {
+    background: #ff3333;
+    height: 100%;
+    transition: width 0.5s;
+}
+
+.self .hp-fill {
+    background: #33ff33;
+}
+
+.log-area {
+    height: 150px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+    margin: 20px 0;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+.my-area {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.hand-area {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    overflow-x: auto;
+    padding: 5px;
+}
+
+.card-btn {
+    background: var(--card-bg);
+    border: 1px solid #555;
+    color: white;
+    padding: 10px;
+    min-width: 100px;
+    height: 140px;
+    /* Taller for custom cards */
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    transform: translateY(-5px);
+}
+
+.card-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.card-btn.end-turn {
+    background: #331111;
+    border-color: #ff3333;
+    min-width: 80px;
+}
+
+/* Creator */
+.creator-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.creator-layout {
+    display: flex;
+    gap: 40px;
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid #333;
+}
+
+.form-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+}
+
+.preview-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    border: 1px solid #555;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}

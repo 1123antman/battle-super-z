@@ -1,0 +1,21 @@
+{
+    "name": "battle-super-z",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite --host",
+        "build": "vite build",
+        "preview": "vite preview",
+        "server": "node server/server.js",
+        "start": "node server/server.js"
+    },
+    "devDependencies": {
+        "vite": "^6.0.0"
+    },
+    "dependencies": {
+        "express": "^4.21.0",
+        "socket.io": "^4.8.1",
+        "socket.io-client": "^4.8.1"
+    }
+}
