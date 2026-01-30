@@ -390,26 +390,30 @@ window.handleImageUpload = (input) => {
   }
 };
 
+const ALL_PRESET_CARDS = [
+  { id: 's1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
+  { id: 's2', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
+  { id: 's3', name: "救急キット", effectId: "heal", power: 10, cost: 2 },
+  { id: 's4', name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
+  { id: 's5', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
+  { id: 's6', name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 },
+  { id: 's7', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
+  { id: 's8', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
+  { id: 's9', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
+];
+
 const STARTER_DECKS = {
-  balance: [
-    { id: 's1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
-    { id: 's2', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
-    { id: 's3', name: "救急キット", effectId: "heal", power: 10, cost: 2 }
-  ],
-  aggro: [
-    { id: 's4', name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
-    { id: 's5', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
-    { id: 's6', name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 }
-  ],
-  tank: [
-    { id: 's7', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
-    { id: 's8', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
-    { id: 's9', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
-  ]
+  balance: [ALL_PRESET_CARDS[0], ALL_PRESET_CARDS[1], ALL_PRESET_CARDS[2]],
+  aggro: [ALL_PRESET_CARDS[3], ALL_PRESET_CARDS[4], ALL_PRESET_CARDS[5]],
+  tank: [ALL_PRESET_CARDS[6], ALL_PRESET_CARDS[7], ALL_PRESET_CARDS[8]]
 };
 
 function getMyCards() {
   const deckType = localStorage.getItem('selected_deck') || 'balance';
+  if (deckType === 'custom_edit') {
+    const editDeck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
+    return editDeck.length > 0 ? editDeck : STARTER_DECKS.balance;
+  }
   const custom = JSON.parse(localStorage.getItem('my_cards') || '[]');
   if (deckType === 'custom') return custom.length > 0 ? custom : STARTER_DECKS.balance;
   return STARTER_DECKS[deckType] || STARTER_DECKS.balance;
@@ -431,13 +435,79 @@ window.renderDeckSelection = () => {
                     <h3>防御・回復型</h3><p>粘り強く戦うデッキ</p>
                 </div>
                 <div class="deck-option ${current === 'custom' ? 'selected' : ''}" onclick="selectDeck('custom')">
-                    <h3>カスタム</h3><p>全ての自作カードを使用</p>
+                    <h3>カスタム (全自作)</h3><p>全ての自作カードを使用</p>
                 </div>
+                <div class="deck-option ${current === 'custom_edit' ? 'selected' : ''}" onclick="selectDeck('custom_edit')">
+                    <h3>マイデッキ (編成)</h3><p>自由に選んだ10枚のデッキ</p>
+                </div>
+            </div>
+            <div style="margin-top:20px;">
+              <button onclick="renderDeckEditor()">デッキを編成する</button>
             </div>
             <button onclick="showView('title')" class="back-btn">タイトルに戻る</button>
         </div>
     `;
   showView('deck-selection', html);
+};
+
+window.renderDeckEditor = () => {
+  const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+  const currentDeck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
+  const allAvailable = [...ALL_PRESET_CARDS, ...myCards];
+
+  const html = `
+    <div class="deck-editor-container">
+      <h2>デッキ編成 (最大10枚)</h2>
+      <div class="deck-editor-layout">
+        <div class="available-cards card-list-section">
+          <h3>所持カード</h3>
+          <div class="card-grid">
+            ${allAvailable.map(card => `
+              <div class="editor-card" onclick='addToDeck(${JSON.stringify(card)})'>
+                <div class="card-name">${card.name}</div>
+                <div class="card-info">${card.element || 'none'} / ${card.effectId} (${card.power})</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="current-deck card-list-section">
+          <h3>現在のデッキ (<span id="deck-count">${currentDeck.length}</span> / 10)</h3>
+          <div id="deck-grid" class="card-grid">
+            ${currentDeck.map((card, idx) => `
+              <div class="editor-card deck-card" onclick="removeFromDeck(${idx})">
+                <div class="card-name">${card.name}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="editor-controls">
+        <button onclick="saveDeck()">保存して戻る</button>
+        <button onclick="renderDeckSelection()" class="secondary">キャンセル</button>
+      </div>
+    </div>
+  `;
+  showView('deck-editor', html);
+};
+
+window.addToDeck = (card) => {
+  const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
+  if (deck.length >= 10) return alert("デッキは10枚までです");
+  deck.push(card);
+  localStorage.setItem('my_custom_deck', JSON.stringify(deck));
+  renderDeckEditor();
+};
+
+window.removeFromDeck = (index) => {
+  const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
+  deck.splice(index, 1);
+  localStorage.setItem('my_custom_deck', JSON.stringify(deck));
+  renderDeckEditor();
+};
+
+window.saveDeck = () => {
+  alert("デッキを保存しました");
+  renderDeckSelection();
 };
 
 window.selectDeck = (type) => {
@@ -560,11 +630,12 @@ function renderBattle(gameState) {
     return !isMyTurn || alreadyUsedType || alreadyUsedCustom || (myPlayer.energy < cost);
   };
 
-  const sortedHand = [...hand]; //元の順序を維持
+  const sortedHand = [...hand];
 
   const html = `
     <div class="battle-container">
       <div class="turn-indicator ${isMyTurn ? 'my-turn' : ''}">${isMyTurn ? "あなたのターン" : "相手のターン"}</div>
+      
       <div class="opponents-row">
         ${opponents.map(p => `
           <div class="player-card opponent" data-id="${p.id}">
@@ -582,14 +653,17 @@ function renderBattle(gameState) {
           </div>
         `).join('')}
       </div>
-      <div class="log-area" id="battle-log"></div>
-      <div class="quick-chat">
-         <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
-         <button onclick="sendChat('強い！')">🔥 強い！</button>
-         <button onclick="sendChat('参りました')">🏳️ 参りました</button>
+
+      <div class="center-battle-ui">
+        <div class="log-area" id="battle-log"></div>
+        <div class="quick-chat">
+           <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
+           <button onclick="sendChat('強い！')">🔥 強い！</button>
+           <button onclick="sendChat('参りました')">🏳️ 参りました</button>
+        </div>
       </div>
+
       <div class="my-area">
-        <div class="home-btn-container"><button onclick="goToHome(true)" class="home-btn-mini">ホーム</button></div>
         <div class="player-card self">
           <div class="player-name">自分</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
@@ -618,7 +692,10 @@ function renderBattle(gameState) {
                 ${card.effectId === 'attack' ? `<button class="summon-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "summon")' ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}>召喚</button>` : ''}
             </div>`;
   }).join('')}
-          <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>ターン終了</button>
+          <div class="card-wrapper">
+            <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>ターン終了</button>
+            <button onclick="goToHome(true)" class="home-btn-mini" style="margin-top:5px;">ホーム</button>
+          </div>
         </div>
       </div>
     </div>`;
