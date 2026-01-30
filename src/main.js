@@ -102,9 +102,12 @@ function setupTitleEvents() {
 
   const btnCreator = document.getElementById('btn-card-creator');
   if (btnCreator) {
-    btnCreator.onclick = () => {
-      renderCardCreator();
-    };
+    btnCreator.onclick = () => renderCardCreator();
+  }
+
+  const btnDeckSelect = document.getElementById('btn-deck-select');
+  if (btnDeckSelect) {
+    btnDeckSelect.onclick = () => renderDeckSelection();
   }
 
   if (btnJoin) {
@@ -387,67 +390,93 @@ window.handleImageUpload = (input) => {
   }
 };
 
-window.updatePreview = () => {
-  const canvas = document.getElementById('card-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+const STARTER_DECKS = {
+  balance: [
+    { name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
+    { name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
+    { name: "救急キット", effectId: "heal", power: 10, cost: 2 }
+  ],
+  aggro: [
+    { name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
+    { name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
+    { name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 }
+  ],
+  tank: [
+    { name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
+    { name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
+    { name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
+  ]
+};
 
-  const isSpecial = document.getElementById('is-special').value === 'special';
-  const name = document.getElementById('card-name').value;
-  let power = parseInt(document.getElementById('card-power').value) || 0;
-  if (power > 20) {
-    power = 20;
-    document.getElementById('card-power').value = 20;
+function getMyCards() {
+  const deckType = localStorage.getItem('selected_deck') || 'balance';
+  const custom = JSON.parse(localStorage.getItem('my_cards') || '[]');
+
+  if (deckType === 'custom') {
+    return custom.length > 0 ? custom : STARTER_DECKS.balance;
   }
-  const element = document.getElementById('card-element').value;
-  const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
-  const frame = document.getElementById('card-frame').value;
-  const vfx = document.getElementById('card-vfx').value;
+  return STARTER_DECKS[deckType] || STARTER_DECKS.balance;
+}
+const canvas = document.getElementById('card-canvas');
+if (!canvas) return;
+const ctx = canvas.getContext('2d');
 
-  // Background
-  ctx.fillStyle = '#1a1a24';
-  let bgApplied = false;
-  if (element === 'fire') { ctx.fillStyle = '#3a1a1a'; bgApplied = true; }
-  else if (element === 'water') { ctx.fillStyle = '#1a2e3a'; bgApplied = true; }
-  else if (element === 'wood') { ctx.fillStyle = '#1a3a1a'; bgApplied = true; }
+const isSpecial = document.getElementById('is-special').value === 'special';
+const name = document.getElementById('card-name').value;
+let power = parseInt(document.getElementById('card-power').value) || 0;
+if (power > 20) {
+  power = 20;
+  document.getElementById('card-power').value = 20;
+}
+const element = document.getElementById('card-element').value;
+const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
+const frame = document.getElementById('card-frame').value;
+const vfx = document.getElementById('card-vfx').value;
 
-  if (!bgApplied) {
-    if (effect === 'attack') ctx.fillStyle = '#331111';
-    else if (effect === 'heal') ctx.fillStyle = '#113311';
-    else if (effect === 'defense') ctx.fillStyle = '#111133';
-  }
-  ctx.fillRect(0, 0, 200, 300);
+// Background
+ctx.fillStyle = '#1a1a24';
+let bgApplied = false;
+if (element === 'fire') { ctx.fillStyle = '#3a1a1a'; bgApplied = true; }
+else if (element === 'water') { ctx.fillStyle = '#1a2e3a'; bgApplied = true; }
+else if (element === 'wood') { ctx.fillStyle = '#1a3a1a'; bgApplied = true; }
 
-  // Frame based on choice
-  ctx.lineWidth = 6;
-  if (frame === 'gold') ctx.strokeStyle = '#ffd700';
-  else if (frame === 'dark') ctx.strokeStyle = '#444';
-  else ctx.strokeStyle = '#00ffcc';
-  ctx.strokeRect(5, 5, 190, 290);
+if (!bgApplied) {
+  if (effect === 'attack') ctx.fillStyle = '#331111';
+  else if (effect === 'heal') ctx.fillStyle = '#113311';
+  else if (effect === 'defense') ctx.fillStyle = '#111133';
+}
+ctx.fillRect(0, 0, 200, 300);
 
-  // [VFX Indicator in preview]
-  if (vfx !== 'default') {
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.font = '10px Arial';
-    ctx.fillText(`VFX: ${vfx}`, 160, 20);
-  }
+// Frame based on choice
+ctx.lineWidth = 6;
+if (frame === 'gold') ctx.strokeStyle = '#ffd700';
+else if (frame === 'dark') ctx.strokeStyle = '#444';
+else ctx.strokeStyle = '#00ffcc';
+ctx.strokeRect(5, 5, 190, 290);
 
-  // Text
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 18px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText(name, 100, 30);
+// [VFX Indicator in preview]
+if (vfx !== 'default') {
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '10px Arial';
+  ctx.fillText(`VFX: ${vfx}`, 160, 20);
+}
 
-  ctx.font = 'bold 24px Arial';
-  ctx.fillText(power, 100, 230);
+// Text
+ctx.fillStyle = '#fff';
+ctx.font = 'bold 18px Arial';
+ctx.textAlign = 'center';
+ctx.fillText(name, 100, 30);
 
-  ctx.font = 'bold 16px Arial';
-  ctx.fillStyle = '#00aaff';
-  ctx.fillText(`COST: ${cost}`, 100, 255);
+ctx.font = 'bold 24px Arial';
+ctx.fillText(power, 100, 230);
 
-  ctx.font = '14px Arial';
-  ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
-  ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 280);
+ctx.font = 'bold 16px Arial';
+ctx.fillStyle = '#00aaff';
+ctx.fillText(`COST: ${cost}`, 100, 255);
+
+ctx.font = '14px Arial';
+ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
+ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 280);
 };
 
 window.saveCustomCard = () => {
