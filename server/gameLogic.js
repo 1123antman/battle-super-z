@@ -92,9 +92,9 @@ class GameLogic {
                 image: cardData.image || null,
                 effectId: cardData.effectId
             };
-            resultLog.push(`${actor.id} summons ${actor.field.summonedCard.name} to the field!`);
+            resultLog.push(`【召喚】${actor.id.slice(0, 4)} が ${actor.field.summonedCard.name} (ATK: ${actor.field.summonedCard.power}) を召喚！`);
             if (previouslySummoned) {
-                resultLog.push(`(Replaced ${previouslySummoned.name})`);
+                resultLog.push(`(以前のカード ${previouslySummoned.name} は破壊されました)`);
             }
         } else {
             // Normal "Use" Logic
@@ -107,17 +107,18 @@ class GameLogic {
                         if (target.type === 'unit') {
                             const unit = target.unit;
                             const owner = state.players[target.ownerId];
-                            resultLog.push(`${actor.id} attacks ${owner.id}'s ${unit.name}!`);
+                            resultLog.push(`【攻撃】${actor.id.slice(0, 4)} が ${owner.id.slice(0, 4)} の召喚ユニット「${unit.name}」を攻撃！`);
                             if (damage > unit.power) {
-                                resultLog.push(`Destroyed ${unit.name}!`);
+                                resultLog.push(`💥 威力 ${damage} > ユニット攻撃力 ${unit.power} により、${unit.name} は破壊された！`);
                                 owner.field.summonedCard = null;
                             } else {
-                                resultLog.push(`${unit.name} survived the attack.`);
+                                resultLog.push(`🛡️ ${unit.name} は攻撃を耐え抜いた。（威力不足）`);
                             }
                             return;
                         }
 
                         // Apply Shield mitigation
+                        const originalDamage = damage;
                         if (target.shield > 0) {
                             if (target.shield >= damage) {
                                 target.shield -= damage;
@@ -128,20 +129,24 @@ class GameLogic {
                             }
                         }
                         target.hp = Math.max(0, target.hp - damage);
-                        resultLog.push(`${actor.id} deals ${damage} damage to ${target.id}`);
+                        resultLog.push(`【攻撃】${actor.id.slice(0, 4)} が ${target.id.slice(0, 4)} に威力 ${originalDamage} の攻撃！`);
+                        if (originalDamage > damage) {
+                            resultLog.push(`(シールドによりダメージが ${damage} に軽減された)`);
+                        }
+                        resultLog.push(`  → ${target.id.slice(0, 4)} の残りHP: ${target.hp}`);
                     });
                     break;
 
                 case 'heal':
                     let heal = parseInt(cardData.power) || 10;
                     actor.hp = Math.min(actor.maxHp, actor.hp + heal);
-                    resultLog.push(`${actor.id} heals ${heal} HP`);
+                    resultLog.push(`【回復】${actor.id.slice(0, 4)} が ${heal} HP 回復！ (現在HP: ${actor.hp})`);
                     break;
 
                 case 'defense':
                     let shield = parseInt(cardData.power) || 10;
                     actor.shield += shield;
-                    resultLog.push(`${actor.id} gains ${shield} Shield`);
+                    resultLog.push(`【防御】${actor.id.slice(0, 4)} がシールドを ${shield} 獲得！ (現在シールド: ${actor.shield})`);
                     break;
 
                 // Add more effects here
