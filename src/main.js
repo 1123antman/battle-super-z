@@ -310,11 +310,16 @@ window.updatePreview = () => {
     document.getElementById('card-power').value = 20;
   }
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
+  const element = document.getElementById('card-element').value;
+  const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
 
   // Background
   ctx.fillStyle = '#1a1a24';
-  if (effect === 'attack') ctx.fillStyle = '#331111';
-  if (effect === 'heal') ctx.fillStyle = '#113311';
+  if (element === 'fire') ctx.fillStyle = '#3a1a1a';
+  if (element === 'water') ctx.fillStyle = '#1a2e3a';
+  if (element === 'wood') ctx.fillStyle = '#1a3a1a';
+  else if (effect === 'attack') ctx.fillStyle = '#331111';
+  else if (effect === 'heal') ctx.fillStyle = '#113311';
   ctx.fillRect(0, 0, 200, 300);
 
   // Image
@@ -343,8 +348,13 @@ window.updatePreview = () => {
   ctx.font = 'bold 24px Arial';
   ctx.fillText(power, 100, 230);
 
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = '#00aaff';
+  ctx.fillText(`COST: ${cost}`, 100, 255);
+
   ctx.font = '14px Arial';
-  ctx.fillText(effect.toUpperCase(), 100, 260);
+  ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
+  ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 280);
 };
 
 window.saveCustomCard = () => {
@@ -355,6 +365,9 @@ window.saveCustomCard = () => {
   if (power > 20) power = 20;
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
 
+  const element = document.getElementById('card-element').value;
+  const cost = parseInt(document.getElementById('card-cost').value) || Math.max(1, Math.floor(power / 5));
+
   const imageData = canvas.toDataURL('image/png');
 
   const newCard = {
@@ -362,7 +375,9 @@ window.saveCustomCard = () => {
     name: name,
     power: power,
     effectId: effect,
-    target: effect === 'attack' ? 'enemy' : 'self', // Simple rule
+    element: element,
+    cost: cost,
+    target: effect === 'attack' ? 'enemy' : 'self',
     image: imageData,
     isCustom: true
   };
