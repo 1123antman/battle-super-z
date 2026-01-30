@@ -14,8 +14,15 @@ const saveWinLoss = (result) => {
   if (result === 'win') stats.win++;
   if (result === 'loss') stats.loss++;
   localStorage.setItem('battle_stats', JSON.stringify(stats));
-  console.log("Stats Updated:", stats);
 };
+
+function getPlayerName() {
+  return localStorage.getItem('player_name') || '名無し';
+}
+
+function setPlayerName(name) {
+  localStorage.setItem('player_name', name || '名無し');
+}
 
 // DOM Elements
 const views = {
@@ -60,7 +67,9 @@ window.showView = function (viewName, contentHTML = '') {
   app.innerHTML = '';
   if (viewName === 'title') {
     app.appendChild(views.title);
-    setupTitleEvents(); // Re-attach listeners
+    setupTitleEvents();
+    const inputName = document.getElementById('input-player-name');
+    if (inputName) inputName.value = getPlayerName();
   } else {
     const div = document.createElement('div');
     div.id = `${viewName}-screen`;
@@ -90,7 +99,8 @@ function setupTitleEvents() {
 
   if (btnCreate) {
     btnCreate.onclick = () => {
-      socket.emit('create_room', (response) => {
+      const playerName = getPlayerName();
+      socket.emit('create_room', { playerName }, (response) => {
         if (response.roomId) {
           currentRoomId = response.roomId;
           console.log("Room Created:", currentRoomId);
@@ -107,14 +117,20 @@ function setupTitleEvents() {
 
   const btnDeckSelect = document.getElementById('btn-deck-select');
   if (btnDeckSelect) {
-    btnDeckSelect.onclick = () => renderDeckSelection();
+    btnDeckSelect.onclick = () => renderDeckEditor();
+  }
+
+  const inputName = document.getElementById('input-player-name');
+  if (inputName) {
+    inputName.onchange = (e) => setPlayerName(e.target.value);
   }
 
   if (btnJoin) {
     btnJoin.onclick = () => {
       const roomId = inputRoom.value;
+      const playerName = getPlayerName();
       if (!roomId) return alert("ルームIDを入力してください");
-      socket.emit('join_room', roomId, (response) => {
+      socket.emit('join_room', { roomId, playerName }, (response) => {
         if (response.error) {
           alert("エラー: " + response.error);
         } else {
@@ -134,7 +150,8 @@ function renderLobby(roomId, playerCount) {
   const html = `
     <div class="center-box">
       <h2>ルーム ID: <span class="highlight">${roomId}</span></h2>
-      <p>現在のプレイヤー: <span id="player-count">${playerCount}</span> / 4</p>
+      <p>プレイヤー名: <span style="color:var(--primary-color)">${getPlayerName()}</span></p>
+      <p>現在の人数: <span id="player-count">${playerCount}</span> / 4</p>
       <div class="lobby-status">
         <p>対戦相手を待っています...</p>
       </div>
@@ -149,7 +166,7 @@ function setupLobbyEvents() {
   const btnStart = document.getElementById('btn-start-game');
   if (btnStart) {
     btnStart.onclick = () => {
-      socket.emit('start_game');
+      socket.emit('start_game', { roomId: currentRoomId });
     };
   }
 }
@@ -178,7 +195,12 @@ socket.on('game_started', (gameState) => {
 // --- Battle Logic ---
 
 window.endTurn = () => {
-  socket.emit('end_turn');
+  if (!currentRoomId) return;
+  // UI保護: 送信直後に全ボタンを無効化
+  const buttons = document.querySelectorAll('.card-btn, .summon-btn');
+  buttons.forEach(btn => btn.disabled = true);
+
+  socket.emit('end_turn', { roomId: currentRoomId });
 };
 
 socket.on('game_over', (data) => {
@@ -391,65 +413,48 @@ window.handleImageUpload = (input) => {
 };
 
 const ALL_PRESET_CARDS = [
-  { id: 's1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
-  { id: 's2', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
-  { id: 's3', name: "救急キット", effectId: "heal", power: 10, cost: 2 },
-  { id: 's4', name: "爆炎", effectId: "attack", power: 18, element: "fire", cost: 4 },
-  { id: 's5', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
-  { id: 's6', name: "突撃", effectId: "attack", power: 12, element: "fire", cost: 2 },
-  { id: 's7', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
-  { id: 's8', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
-  { id: 's9', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 }
+  // Fire
+  { id: 'p1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
+  { id: 'p2', name: "爆炎烈破", effectId: "attack", power: 18, element: "fire", cost: 4 },
+  { id: 'p3', name: "フレア・バースト", effectId: "attack", power: 15, element: "fire", cost: 3 },
+  { id: 'p4', name: "プロミネンス", effectId: "attack", power: 20, element: "fire", cost: 5 },
+  { id: 'p5', name: "焚き火", effectId: "heal", power: 8, element: "fire", cost: 2 },
+  { id: 'p6', name: "火山弾", effectId: "attack", power: 14, element: "fire", cost: 3 },
+  { id: 'p7', name: "ヒート・シールド", effectId: "defense", power: 12, element: "fire", cost: 2 },
+  { id: 'p7_2', name: "イフリートの牙", effectId: "attack", power: 16, element: "fire", cost: 3 },
+
+  // Water
+  { id: 'p8', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
+  { id: 'p9', name: "アクア・ヒール", effectId: "heal", power: 12, element: "water", cost: 2 },
+  { id: 'p10', name: "激流", effectId: "attack", power: 14, element: "water", cost: 3 },
+  { id: 'p11', name: "深海の囁き", effectId: "heal", power: 18, element: "water", cost: 4 },
+  { id: 'p12', name: "氷結の波動", effectId: "attack", power: 10, element: "water", cost: 2 },
+  { id: 'p13', name: "ミスト・スクリーン", effectId: "defense", power: 20, element: "water", cost: 4 },
+  { id: 'p14', name: "バブル・ショット", effectId: "attack", power: 11, element: "water", cost: 2 },
+  { id: 'p14_2', name: "海神の怒り", effectId: "attack", power: 19, element: "water", cost: 5 },
+
+  // Wood
+  { id: 'p15', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
+  { id: 'p16', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
+  { id: 'p17', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 },
+  { id: 'p18', name: "世界樹の種", effectId: "heal", power: 20, element: "wood", cost: 5 },
+  { id: 'p19', name: "根の束縛", effectId: "defense", power: 10, element: "wood", cost: 2 },
+  { id: 'p20', name: "木霊の舞", effectId: "attack", power: 12, element: "wood", cost: 2 },
+  { id: 'p21', name: "リーフ・カッター", effectId: "attack", power: 13, element: "wood", cost: 2 },
+  { id: 'p21_2', name: "精霊の息吹", effectId: "heal", power: 10, element: "wood", cost: 1 },
+
+  // None
+  { id: 'p22', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
+  { id: 'p23', name: "突撃", effectId: "attack", power: 12, element: "none", cost: 2 },
+  { id: 'p24', name: "救急キット", effectId: "heal", power: 10, element: "none", cost: 2 }
 ];
 
-const STARTER_DECKS = {
-  balance: [ALL_PRESET_CARDS[0], ALL_PRESET_CARDS[1], ALL_PRESET_CARDS[2]],
-  aggro: [ALL_PRESET_CARDS[3], ALL_PRESET_CARDS[4], ALL_PRESET_CARDS[5]],
-  tank: [ALL_PRESET_CARDS[6], ALL_PRESET_CARDS[7], ALL_PRESET_CARDS[8]]
-};
-
 function getMyCards() {
-  const deckType = localStorage.getItem('selected_deck') || 'balance';
-  if (deckType === 'custom_edit') {
-    const editDeck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
-    return editDeck.length > 0 ? editDeck : STARTER_DECKS.balance;
-  }
-  const custom = JSON.parse(localStorage.getItem('my_cards') || '[]');
-  if (deckType === 'custom') return custom.length > 0 ? custom : STARTER_DECKS.balance;
-  return STARTER_DECKS[deckType] || STARTER_DECKS.balance;
+  const customDeck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
+  if (customDeck.length > 0) return customDeck;
+  // デフォルトとして最初の10枚を返す
+  return ALL_PRESET_CARDS.slice(0, 10);
 }
-
-function renderDeckSelection() {
-  const current = localStorage.getItem('selected_deck') || 'balance';
-  const html = `
-        <div class="deck-selection-container">
-            <h2>デッキ選択</h2>
-            <div class="deck-options">
-                <div class="deck-option ${current === 'balance' ? 'selected' : ''}" onclick="selectDeck('balance')">
-                    <h3>バランス型</h3><p>攻守のバランスが良いデッキ</p>
-                </div>
-                <div class="deck-option ${current === 'aggro' ? 'selected' : ''}" onclick="selectDeck('aggro')">
-                    <h3>攻撃特化型</h3><p>高火力で攻めるデッキ</p>
-                </div>
-                <div class="deck-option ${current === 'tank' ? 'selected' : ''}" onclick="selectDeck('tank')">
-                    <h3>防御・回復型</h3><p>粘り強く戦うデッキ</p>
-                </div>
-                <div class="deck-option ${current === 'custom' ? 'selected' : ''}" onclick="selectDeck('custom')">
-                    <h3>カスタム (全自作)</h3><p>全ての自作カードを使用</p>
-                </div>
-                <div class="deck-option ${current === 'custom_edit' ? 'selected' : ''}" onclick="selectDeck('custom_edit')">
-                    <h3>マイデッキ (編成)</h3><p>自由に選んだ10枚のデッキ</p>
-                </div>
-            </div>
-            <div style="margin-top:20px;">
-              <button onclick="renderDeckEditor()">デッキを編成する</button>
-            </div>
-            <button onclick="showView('title')" class="back-btn">タイトルに戻る</button>
-        </div>
-    `;
-  showView('deck-selection', html);
-}
-window.renderDeckSelection = renderDeckSelection;
 
 function renderDeckEditor() {
   const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
@@ -459,6 +464,8 @@ function renderDeckEditor() {
   const html = `
     <div class="deck-editor-container">
       <h2>デッキ編成 (最大10枚)</h2>
+      <p style="color: #aaa; margin-bottom: 20px;">デッキ内のカードは戦闘中に一度だけ使用可能です。<br>
+      基本の「攻撃・シールド・回復」は何度でも使えます。</p>
       <div class="deck-editor-layout">
         <div class="available-cards card-list-section">
           <h3>所持カード</h3>
@@ -484,7 +491,7 @@ function renderDeckEditor() {
       </div>
       <div class="editor-controls">
         <button onclick="saveDeck()">保存して戻る</button>
-        <button onclick="renderDeckSelection()" class="secondary">キャンセル</button>
+        <button onclick="showView('title')" class="secondary">キャンセル</button>
       </div>
     </div>
   `;
@@ -511,13 +518,13 @@ window.removeFromDeck = removeFromDeck;
 
 function saveDeck() {
   alert("デッキを保存しました");
-  renderDeckSelection();
+  showView('title');
 }
 window.saveDeck = saveDeck;
 
 function selectDeck(type) {
+  // 後方互換性のため残すが、実質的には不要
   localStorage.setItem('selected_deck', type);
-  renderDeckSelection();
 }
 window.selectDeck = selectDeck;
 
@@ -625,15 +632,21 @@ function renderBattle(gameState) {
   const deckCards = getMyCards();
   const baseCards = [
     { id: 'base_atk', name: "基本攻撃", effectId: "attack", power: 10, target: "enemy", cost: 2 },
+    { id: 'base_def', name: "基本シールド", effectId: "defense", power: 10, target: "self", cost: 2 },
     { id: 'base_heal', name: "基本回復", effectId: "heal", power: 10, target: "self", cost: 2 }
   ];
   const hand = [...baseCards, ...deckCards];
 
   const checkDisabled = (card) => {
-    const alreadyUsedType = myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes(card.effectId);
-    const alreadyUsedCustom = card.isCustom && myPlayer.usedCustomCardIds && myPlayer.usedCustomCardIds.includes(card.id);
+    // 基本カード (base_) は何度でも使える
+    if (card.id.startsWith('base_')) {
+      return !isMyTurn || (myPlayer.energy < card.cost);
+    }
+
+    // デッキ内のカードは一度使うとバトル終了まで使えない (usedCardIds に含まれる場合)
+    const alreadyUsed = myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id);
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
-    return !isMyTurn || alreadyUsedType || alreadyUsedCustom || (myPlayer.energy < cost);
+    return !isMyTurn || alreadyUsed || (myPlayer.energy < cost);
   };
 
   const sortedHand = [...hand];
@@ -645,7 +658,7 @@ function renderBattle(gameState) {
       <div class="opponents-row">
         ${opponents.map(p => `
           <div class="player-card opponent" data-id="${p.id}">
-            <div class="player-name">プレイヤー ${p.id.slice(0, 4)}</div>
+            <div class="player-name">${p.playerName || `プレイヤー ${p.id.slice(0, 4)}`}</div>
             <div class="hp-bar"><div class="hp-fill" style="width: ${(p.hp / p.maxHp) * 100}%"></div></div>
             <div class="stats">HP: ${p.hp} | Shield: ${p.shield}</div>
             <div class="summon-field">
@@ -671,7 +684,7 @@ function renderBattle(gameState) {
 
       <div class="my-area">
         <div class="player-card self">
-          <div class="player-name">自分</div>
+          <div class="player-name">${myPlayer.playerName || "自分"}</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
           <div class="energy-display">🔋 エネルギー: ${myPlayer.energy} / ${myPlayer.maxEnergy || 10}</div>
@@ -688,14 +701,15 @@ function renderBattle(gameState) {
           ${sortedHand.map(card => {
     const isDisabled = checkDisabled(card);
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
+    const isBasic = card.id.startsWith('base_');
     return `
             <div class="card-wrapper ${isDisabled ? 'card-disabled' : ''}">
                 <button class="card-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "use")' ${isDisabled ? 'disabled' : ''} style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}">
                   <div class="card-cost">${cost}</div>
                   ${!card.image ? card.name : ''}<br>
-                  <small>${card.element ? `${card.element} ` : ''}${card.effectId} (${card.power})</small>
+                  <small>${card.element && card.element !== 'none' ? `${card.element} ` : ''}${card.effectId} (${card.power})</small>
                 </button>
-                ${card.effectId === 'attack' ? `<button class="summon-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "summon")' ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}>召喚</button>` : ''}
+                ${(card.effectId === 'attack' && !isBasic) ? `<button class="summon-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "summon")' ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}>召喚</button>` : ''}
             </div>`;
   }).join('')}
           <div class="card-wrapper">
