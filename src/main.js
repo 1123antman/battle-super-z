@@ -340,8 +340,19 @@ socket.on('action_performed', (data) => {
     }
   }
 
-  if (data.cardData && data.cardData.image) {
-    battleLogs.push(`<div class="log-card"><img src="${data.cardData.image}" width="50" height="50"> <span>${data.cardData.name || 'Card'}</span> used!</div>`);
+  if (data.cardData) {
+    let img = data.cardData.image;
+    // [NEW] Recover image from local storage if it's a custom card and image is missing
+    if (!img && data.cardData.isCustom) {
+      const localCard = getCardById(data.cardData.id);
+      if (localCard) img = localCard.image;
+    }
+
+    if (img) {
+      battleLogs.push(`<div class="log-card"><img src="${img}" width="50" height="50"> <span>${data.cardData.name || 'Card'}</span> used!</div>`);
+    } else {
+      battleLogs.push(`<div class="log-entry">🃏 <span>${data.cardData.name || 'Card'}</span> used!</div>`);
+    }
   }
   if (data.logs) {
     console.log('[LOG_DEBUG] Received logs:', data.logs);
@@ -1137,7 +1148,8 @@ window.playCardWithObjID = (cardId, actionType = 'use') => {
     targetId: targetId,
     targetType: targetType,
     name: card.name,
-    image: card.image,
+    // [OPTIMIZATION] Don't send heavy image data over socket to prevent freeze
+    // image: card.image, 
     element: card.element || 'none',
     cost: card.cost || Math.max(1, Math.floor(card.power / 5)),
     isCustom: card.isCustom || false,
