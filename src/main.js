@@ -1113,7 +1113,7 @@ window.renderGallery = () => {
               <div class="gallery-card-skills">
                 ${(card.skills || []).map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
               </div>
-              <div class="gallery-card-meta">${card.element !== 'none' ? card.element.toUpperCase() : 'NONE'} | ${(card.effectId || '').toUpperCase()}</div>
+              <div class="gallery-card-meta">${(card.element || 'none').toUpperCase()} | ${(card.effectId || 'UNKNOWN').toUpperCase()}</div>
               
               <div style="margin-top: 10px;">
                 <button class="secondary btn-dl-card" style="width: 100%; font-size: 0.8rem; padding: 5px;" 
