@@ -933,8 +933,12 @@ window.limitSkill = (clicked) => {
 window.saveCustomCard = () => {
   const canvas = document.getElementById('card-canvas');
   if (!canvas) return;
+  const name = document.getElementById('card-name').value.trim();
+  if (!name) {
+    alert("カード名を入力してください");
+    return;
+  }
   const isSpecial = document.getElementById('is-special').value === 'special';
-  const name = document.getElementById('card-name').value;
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
   let power = parseInt(document.getElementById('card-power').value) || 0;
 
@@ -963,21 +967,31 @@ window.saveCustomCard = () => {
   if (document.getElementById('skill-stun')?.checked) skills.push('stun');
   if (document.getElementById('skill-twin')?.checked) skills.push('twinStrike');
 
-  const newCard = {
-    id: 'c' + Date.now(),
-    name, power, effectId: effect, element, cost, frame, vfx,
-    skills,
-    flavor: document.getElementById('card-flavor')?.value || "",
-    isSpecial: isSpecial,
-    summonRole: document.getElementById('summon-role').value,
-    isCustom: true,
-    image: canvas.toDataURL('image/png')
-  };
-  const stored = JSON.parse(localStorage.getItem('my_cards') || '[]');
-  stored.push(newCard);
-  localStorage.setItem('my_cards', JSON.stringify(stored));
-  alert("カードを保存しました！");
-  showView('title');
+  try {
+    const newCard = {
+      id: 'c' + Date.now(),
+      name, power, effectId: effect, element, cost, frame, vfx,
+      skills,
+      flavor: document.getElementById('card-flavor')?.value || "",
+      isSpecial: isSpecial,
+      summonRole: document.getElementById('summon-role').value,
+      isCustom: true,
+      // [OPTIMIZATION] Use WebP instead of PNG to save storage space (localStorage limit is ~5MB)
+      image: canvas.toDataURL('image/webp', 0.8)
+    };
+    const stored = JSON.parse(localStorage.getItem('my_cards') || '[]');
+    stored.push(newCard);
+    localStorage.setItem('my_cards', JSON.stringify(stored));
+    alert("カードを保存しました！");
+    showView('title');
+  } catch (e) {
+    console.error("Failed to save card:", e);
+    if (e.name === 'QuotaExceededError') {
+      alert("保存容量がいっぱいです。不要なカードを削除してから再度お試しください。");
+    } else {
+      alert("カードの保存中にエラーが発生しました: " + e.message);
+    }
+  }
 };
 
 
