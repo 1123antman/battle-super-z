@@ -256,7 +256,7 @@ socket.on('game_started', (gameState) => {
   lastGameState = null;
   isActing = false;
 
-  renderBattle(gameState);
+  window.safeRenderBattle(gameState);
 });
 
 function setupBattleEvents() {
@@ -354,7 +354,7 @@ socket.on('action_performed', (data) => {
     });
     console.log('[LOG_DEBUG] Total battleLogs count:', battleLogs.length);
   }
-  renderBattle(data.gameState);
+  window.safeRenderBattle(data.gameState);
 });
 
 function triggerVFX(type, targetEl) {
@@ -379,7 +379,7 @@ socket.on('turn_changed', (data) => {
   battleLogs.push(`--- ターン交代 ---`);
   if (data.logs) battleLogs.push(...data.logs); // Add decay logs etc.
   localUsedTypes = [];
-  renderBattle(data.gameState);
+  window.safeRenderBattle(data.gameState);
 
   if (data.gameState.currentTurnPlayerId === socket.id) {
     showTurnBanner("自分のターン");
@@ -414,7 +414,9 @@ socket.on('error_message', (msg) => {
 function updateLogs() {
   const logDiv = document.getElementById('battle-log');
   if (logDiv) {
-    logDiv.innerHTML = battleLogs.map(l => `<div>${l}</div>`).join('');
+    // Keep only the last 20 logs for mobile performance
+    const displayLogs = battleLogs.slice(-20);
+    logDiv.innerHTML = displayLogs.map(l => `<div>${l}</div>`).join('');
     logDiv.scrollTop = logDiv.scrollHeight;
   }
 }
@@ -1095,6 +1097,15 @@ function renderBattle(gameState) {
   showView('battle', html);
   updateLogs();
 }
+
+// [NEW] Debounced render for mobile stability
+let renderTimer = null;
+window.safeRenderBattle = (state) => {
+  if (renderTimer) clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => {
+    renderBattle(state);
+  }, 100);
+};
 
 let isActing = false; // [NEW] Flag to prevent double-click / simultaneous sends
 
