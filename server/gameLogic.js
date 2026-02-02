@@ -22,7 +22,7 @@ class GameLogic {
                     summonedCard: null
                 },
                 usedCardIds: [], // [NEW] Track used deck cards
-                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] ?? 10) : 10
+                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] ?? 15) : 15
             };
         });
 
@@ -221,6 +221,31 @@ class GameLogic {
                     let shield = parseInt(cardData.power) || 10;
                     actor.shield += shield;
                     resultLog.push(`【防御】${actorName} がシールドを ${shield} 獲得！ (現在シールド: ${actor.shield})`);
+                    break;
+                case 'energy_gain':
+                    let gain = Math.floor((parseInt(cardData.power) || 10) / 2);
+                    actor.energy = Math.min(actor.maxEnergy, actor.energy + gain);
+                    resultLog.push(`【チャージ】${actorName} がエネルギーを ${gain} 獲得！ (現在: ${actor.energy})`);
+                    break;
+                case 'status_clear':
+                    actor.status = [];
+                    resultLog.push(`【クリア】${actorName} の全ての状態異常が回復した！`);
+                    break;
+                case 'stun_only':
+                    targets.forEach(target => {
+                        if (!target.status) target.status = [];
+                        target.status.push({ id: 'stun', duration: 1 });
+                        const targetName = target.playerName || (target.id ? target.id.slice(0, 4) : 'Unknown');
+                        resultLog.push(`【妨害】${targetName} はスタンした！`);
+                    });
+                    break;
+                case 'poison_only':
+                    targets.forEach(target => {
+                        if (!target.status) target.status = [];
+                        target.status.push({ id: 'poison', duration: 3 });
+                        const targetName = target.playerName || (target.id ? target.id.slice(0, 4) : 'Unknown');
+                        resultLog.push(`【毒】${targetName} は毒になった！`);
+                    });
                     break;
             }
         }

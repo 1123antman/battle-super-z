@@ -188,7 +188,7 @@ window.renderRules = () => {
       <section>
         <h2>1. デッキ編成のルール</h2>
         <ul>
-          <li>デッキは<span class="highlight">最大10枚</span>のカードで構成されます。</li>
+          <li>デッキは<span class="highlight">最大15枚</span>のカードで構成されます。</li>
           <li>カードの<span class="highlight">合計コストは50以下</span>である必要があります。</li>
           <li>同じカード（IDが同じもの）はデッキに<span class="highlight">1枚</span>しか入れられません。</li>
           <li>基本アクション（攻撃・シールド・回復）はデッキに関わらず常に使用可能です。</li>
@@ -434,6 +434,10 @@ function renderCardCreator() {
                <option value="attack">攻撃として扱う</option>
                <option value="heal">回復として扱う</option>
                <option value="defense">防御として扱う</option>
+               <option value="energy_gain">エネルギー獲得</option>
+               <option value="status_clear">状態異常回復</option>
+               <option value="stun_only">スタン付与</option>
+               <option value="poison_only">毒付与</option>
              </select>
           </div>
           <div class="input-group">
@@ -646,7 +650,7 @@ function renderDeckEditor() {
   const html = `
     <div class="deck-editor-container">
       <h2>デッキ編成</h2>
-      <p style="color: #aaa; margin-bottom: 20px;">制約: 最大10枚 かつ 合計コスト50以下<br>
+      <p style="color: #aaa; margin-bottom: 20px;">制約: 最大15枚 かつ 合計コスト50以下<br>
       基本の「攻撃・シールド・回復」は何度でも使えます。</p>
       <div class="deck-editor-layout">
         <div class="available-cards card-list-section">
@@ -670,7 +674,7 @@ function renderDeckEditor() {
           </div>
         </div>
         <div class="current-deck card-list-section">
-          <h3>現在のデッキ (<span id="deck-count">${currentDeck.length}</span> / 10)</h3>
+          <h3>現在のデッキ (<span id="deck-count">${currentDeck.length}</span> / 15)</h3>
           <p>合計：<span id="deck-total-cost" style="color: ${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0) > 50 ? '#ff3333' : '#33ff33'}">${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0)}</span> / 50</p>
           <div id="deck-grid" class="card-grid">
             ${currentDeck.map((card, idx) => `
@@ -699,7 +703,7 @@ function addToDeck(cardId) {
   const cardCost = card.cost || Math.max(1, Math.floor((card.power || 0) / 5));
   const currentTotalCost = deck.reduce((sum, c) => sum + (c.cost || 0), 0);
 
-  if (deck.length >= 10) return alert("デッキは10枚までです");
+  if (deck.length >= 15) return alert("デッキは15枚までです");
   if (currentTotalCost + cardCost > 50) return alert("合計コストが50を超えてしまいます");
   if (deck.some(c => c.id === card.id)) return alert("同じカードは1枚までです");
 
@@ -793,7 +797,7 @@ window.updatePreview = () => {
   ctx.fillText(`COST: ${cost}`, 100, 255);
   ctx.font = '12px Arial';
   ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
-  ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 270);
+  ctx.fillText(`${element.toUpperCase()} ${effect.replace(/_/g, ' ').toUpperCase()}`, 100, 270);
 
   // Preview Role
   const role = document.getElementById('summon-role')?.value || 'attacker';
