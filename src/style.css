@@ -773,3 +773,18 @@ option {
     color: #666;
     font-size: 0.75rem;
 }
+/* --- Gallery View --- */
+.gallery-container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; margin-top: 30px; max-height: 70vh; overflow-y: auto; padding: 20px; background: rgba(0, 0, 0, 0.2); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.gallery-item { padding: 15px; display: flex; flex-direction: column; align-items: center; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.gallery-item:hover { transform: translateY(-10px) scale(1.03); border-color: var(--primary-color); box-shadow: 0 15px 40px rgba(0, 242, 255, 0.15); }
+.gallery-card-img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.1); }
+.no-img-placeholder { width: 100%; height: 140px; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #555; margin-bottom: 12px; }
+.gallery-card-info { width: 100%; text-align: left; }
+.gallery-card-name { font-weight: 900; font-size: 1.1rem; margin-bottom: 8px; color: var(--primary-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gallery-card-stats { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+.stat-power { color: var(--accent-color); }
+.stat-cost { color: #00aaff; }
+.gallery-card-skills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; min-height: 20px; }
+.gallery-skill-tag { font-size: 0.65rem; background: rgba(255, 255, 255, 0.1); padding: 2px 8px; border-radius: 10px; color: #ddd; }
+.gallery-card-meta { font-size: 0.7rem; color: #666; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px; }

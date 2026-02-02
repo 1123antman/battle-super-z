@@ -101,6 +101,7 @@ function setupTitleEvents() {
   const inputRoom = document.getElementById('input-room-id');
   const btnCreator = document.getElementById('btn-card-creator');
   const btnDeckEditor = document.getElementById('btn-deck-select');
+  const btnGallery = document.getElementById('btn-gallery');
 
   if (btnCreate) {
     btnCreate.onclick = () => {
@@ -126,6 +127,10 @@ function setupTitleEvents() {
 
   if (btnDeckEditor) {
     btnDeckEditor.onclick = () => renderDeckEditor();
+  }
+
+  if (btnGallery) {
+    btnGallery.onclick = () => renderGallery();
   }
 
   const inputName = document.getElementById('input-player-name');
@@ -1075,6 +1080,42 @@ window.playCardWithObjID_UNIT_CLICK = () => {
     battleLogs.push(`<div class="log-entry" style="color:var(--accent-color); text-align:center; background:rgba(255,234,0,0.1)">🎯 ターゲットをユニットに変更しました</div>`);
     updateLogs();
   }
+};
+
+window.renderGallery = () => {
+  const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+
+  const html = `
+    <div class="gallery-container">
+      <h2>カード図鑑（作成済みカード）</h2>
+      <p style="color: #aaa; margin-bottom: 20px;">あなたが作成したオリジナルカードの一覧です。</p>
+      
+      <div class="gallery-grid">
+        ${myCards.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">まだカードを作成していません</p>' : ''}
+        ${myCards.map(card => `
+          <div class="gallery-item glass">
+            ${card.image ? `<img src="${card.image}" class="gallery-card-img">` : '<div class="no-img-placeholder">No Image</div>'}
+            <div class="gallery-card-info">
+              <div class="gallery-card-name">${card.name}</div>
+              <div class="gallery-card-stats">
+                <span class="stat-power">${card.effectId === 'attack' ? '⚔️' : card.effectId === 'heal' ? '❤️' : '🛡️'} ${card.power}</span>
+                <span class="stat-cost">🔋 ${card.cost}</span>
+              </div>
+              <div class="gallery-card-skills">
+                ${(card.skills || []).map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
+              </div>
+              <div class="gallery-card-meta">${card.element !== 'none' ? card.element.toUpperCase() : 'NONE'} | ${card.effectId.toUpperCase()}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div style="margin-top: 30px; text-align: center;">
+        <button onclick="goToHome()">タイトルに戻る</button>
+      </div>
+    </div>
+  `;
+  showView('gallery', html);
 };
 
 setupTitleEvents();
