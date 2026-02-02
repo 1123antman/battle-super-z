@@ -789,29 +789,13 @@ window.updatePreview = () => {
   const scale = 3;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background
+  // Background (Fallback dark color)
   ctx.fillStyle = '#1a1a24';
-  let bgApplied = false;
-  if (element === 'fire') { ctx.fillStyle = '#3a1a1a'; bgApplied = true; }
-  else if (element === 'water') { ctx.fillStyle = '#1a2e3a'; bgApplied = true; }
-  else if (element === 'wood') { ctx.fillStyle = '#1a3a1a'; bgApplied = true; }
-
-  if (!bgApplied) {
-    if (effect === 'attack') ctx.fillStyle = '#331111';
-    else if (effect === 'heal') ctx.fillStyle = '#113311';
-    else if (effect === 'defense') ctx.fillStyle = '#111133';
-  }
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Image Area (scaled)
-  const imgX = 10 * scale;
-  const imgY = 40 * scale;
-  const imgW = 180 * scale;
-  const imgH = 150 * scale;
-
-  // Image (Prevent stretching using "cover" logic)
+  // Full-card Image logic
   if (loadedImage) {
-    const targetRatio = imgW / imgH;
+    const targetRatio = canvas.width / canvas.height;
     const imgRatio = loadedImage.width / loadedImage.height;
 
     let sX, sY, sW, sH;
@@ -826,15 +810,23 @@ window.updatePreview = () => {
       sX = 0;
       sY = (loadedImage.height - sH) / 2;
     }
-    ctx.drawImage(loadedImage, sX, sY, sW, sH, imgX, imgY, imgW, imgH);
-  } else {
-    ctx.fillStyle = '#333';
-    ctx.fillRect(imgX, imgY, imgW, imgH);
-    ctx.fillStyle = '#555';
-    ctx.font = `${20 * scale}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.fillText("No Image", 100 * scale, 120 * scale);
+    ctx.drawImage(loadedImage, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
   }
+
+  // UI Overlays for Readability
+  // Top overlay for name
+  const topGrad = ctx.createLinearGradient(0, 0, 0, 50 * scale);
+  topGrad.addColorStop(0, 'rgba(0,0,0,0.7)');
+  topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, canvas.width, 60 * scale);
+
+  // Bottom overlay for stats
+  const botGrad = ctx.createLinearGradient(0, canvas.height - 120 * scale, 0, canvas.height);
+  botGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  botGrad.addColorStop(1, 'rgba(0,0,0,0.8)');
+  ctx.fillStyle = botGrad;
+  ctx.fillRect(0, canvas.height - 120 * scale, canvas.width, 120 * scale);
 
   // Frame
   ctx.lineWidth = 6 * scale;
@@ -843,20 +835,25 @@ window.updatePreview = () => {
   else ctx.strokeStyle = '#00ffcc';
   ctx.strokeRect(5 * scale, 5 * scale, 190 * scale, 290 * scale);
 
-  // Text (Japanese localized)
+  // Text (Japanese localized) with shadow for readability
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 4 * scale;
+  ctx.shadowOffsetX = 2 * scale;
+  ctx.shadowOffsetY = 2 * scale;
+
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
   ctx.font = `bold ${18 * scale}px Arial`;
-  ctx.fillText(name, 100 * scale, 30 * scale);
+  ctx.fillText(name, 100 * scale, 35 * scale);
 
-  ctx.font = `bold ${24 * scale}px Arial`;
+  ctx.font = `bold ${32 * scale}px Arial`;
   ctx.fillText(power, 100 * scale, 230 * scale);
 
   ctx.font = `bold ${16 * scale}px Arial`;
   ctx.fillStyle = '#00aaff';
   ctx.fillText(`コスト: ${cost}`, 100 * scale, 255 * scale);
 
-  ctx.font = `${12 * scale}px Arial`;
+  ctx.font = `bold ${12 * scale}px Arial`;
   ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
 
   const elementJP = { fire: '火', water: '水', wood: '木', none: '無' }[element] || '無';
@@ -867,12 +864,18 @@ window.updatePreview = () => {
   const flavor = document.getElementById('card-flavor')?.value || '';
   if (flavor) {
     ctx.font = `italic ${10 * scale}px Arial`;
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#ccc';
     ctx.fillText(flavor.substring(0, 20), 100 * scale, 195 * scale);
     if (flavor.length > 20) {
       ctx.fillText(flavor.substring(20, 40), 100 * scale, 207 * scale);
     }
   }
+
+  // Shadows off for skills/role icons
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 
   // Preview Role
   const role = document.getElementById('summon-role')?.value || 'attacker';
