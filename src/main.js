@@ -191,37 +191,56 @@ window.renderRules = () => {
       <h1>BATTLE SUPER Z ルール説明</h1>
       
       <section>
-        <h2>1. デッキ編成のルール</h2>
+        <h2>1. 基本行動とエネルギー</h2>
+        <ul>
+          <li><strong>初期エネルギー</strong>: 3 / <strong>最大</strong>: 10</li>
+          <li><strong>回復</strong>: 毎ターン開始時にエネルギーが <span class="highlight">2</span> 回復します。</li>
+          <li><strong>基本アクション</strong>: 「攻撃・シールド・回復」はコスト <span class="highlight">2</span> で、デッキに関わらず常に使用可能です。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. デッキ編成のルール</h2>
         <ul>
           <li>デッキは<span class="highlight">最大15枚</span>のカードで構成されます。</li>
           <li>カードの<span class="highlight">合計コストは50以下</span>である必要があります。</li>
           <li>同じカード（IDが同じもの）はデッキに<span class="highlight">1枚</span>しか入れられません。</li>
-          <li>基本アクション（攻撃・シールド・回復）はデッキに関わらず常に使用可能です。</li>
+          <li><span class="danger">手札枯渇ペナルティ</span>: デッキのカードをすべて使い切ると、毎ターン終了時に <span class="danger">5 HP</span> のダメージを受けます。</li>
         </ul>
       </section>
 
       <section>
-        <h2>2. オリジナルカード作成</h2>
-        <ul>
-          <li>攻撃力または効果値が<span class="danger">10以上</span>のカードを作る場合、コストは<span class="danger">5以上</span>に設定する必要があります。</li>
-          <li>強力なカードには相応のエネルギー消費が求められます。</li>
+        <h2>3. 属性相性 (Element)</h2>
+        <div class="affinity-diagram">
+          <p>特定の属性で攻撃すると、ダメージが変化します：</p>
+          <ul class="no-bullets">
+            <li>🔥 <strong>火</strong> は 🌲 <strong>木</strong> に強い (<span class="highlight">1.5倍</span>)</li>
+            <li>🌲 <strong>木</strong> は 💧 <strong>水</strong> に強い (<span class="highlight">1.5倍</span>)</li>
+            <li>💧 <strong>水</strong> は 🔥 <strong>火</strong> に強い (<span class="highlight">1.5倍</span>)</li>
+          </ul>
+          <p><small>※不利な属性への攻撃は <span class="danger">0.5倍</span> に減少します。</small></p>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. 特殊スキル</h2>
+        <ul class="skills-list">
+          <li><strong>🧛 吸血</strong>: 与えたダメージの半分を自分のHPとして回復します。</li>
+          <li><strong>🎯 貫通</strong>: 相手のシールドを無視して直接HPにダメージを与えます。</li>
+          <li><strong>🤢 毒付与</strong>: 3ターンの間、ターン終了時にダメージを与えます。</li>
+          <li><strong>😵 スタン付与</strong>: 相手の次のターンをスキップさせます。</li>
+          <li><strong>⚔️ 二連撃</strong>: 1度の使用で2回連続攻撃を行います。</li>
         </ul>
       </section>
 
       <section>
-        <h2>3. 召喚ユニットの仕様</h2>
+        <h2>5. 召喚ユニットとロール</h2>
+        <p>攻撃カードを「召喚」すると、場にユニットを配置できます：</p>
         <ul>
-          <li>攻撃カードを「召喚」としてプレイすると、場にユニットを配置できます。</li>
-          <li><span class="highlight">削りダメージ</span>: ユニットを攻撃した際、一撃で倒せなくても、攻撃力の分だけユニットの威力を減少させられます。</li>
-          <li><span class="highlight">自然減衰</span>: 召喚ユニットは持ち主のターンが終わるたびに、威力が<span class="danger">2減少</span>します。威力が0になると消滅します。</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>4. ペナルティと勝利条件</h2>
-        <ul>
-          <li>相手のHPを<span class="highlight">0</span>にすれば勝利です。</li>
-          <li><span class="danger">手札枯渇ペナルティ</span>: デッキに入れた使い切りカードをすべて使い切ったプレイヤーは、毎ターン終了時に<span class="danger">5 HP</span>のダメージを受けます。</li>
+          <li><strong>アタッカー</strong>: 標準的なユニットです。</li>
+          <li><strong>ガーディアン</strong>: プレイヤーの身代わりとなり、相手の攻撃を優先的に受けます。</li>
+          <li><strong>エネルギー供給</strong>: 毎ターンのエネルギー回復量が <span class="highlight">+1</span> されます。</li>
+          <li><strong>自然減衰</strong>: ユニットは持ち主のターン終了時に威力が <span class="danger">2</span> 減少します。0になると消滅します。</li>
         </ul>
       </section>
 
