@@ -741,11 +741,25 @@ window.updatePreview = () => {
   const isSpecial = document.getElementById('is-special').value === 'special';
   const nameInput = document.getElementById('card-name');
   const name = nameInput ? nameInput.value : "Card";
+  const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
+
   const powerInput = document.getElementById('card-power');
+  const needsPower = ['attack', 'heal', 'defense'].includes(effect);
+
+  if (!needsPower) {
+    if (effect === 'energy_gain') {
+      if (powerInput) powerInput.value = 5;
+    } else {
+      if (powerInput) powerInput.value = 1;
+    }
+    if (powerInput) powerInput.disabled = true;
+  } else {
+    if (powerInput) powerInput.disabled = false;
+  }
+
   let power = powerInput ? (parseInt(powerInput.value) || 0) : 10;
   if (power > 20) { power = 20; if (powerInput) powerInput.value = 20; }
 
-  const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
   const element = document.getElementById('card-element').value;
   const costInput = document.getElementById('card-cost');
   const cost = (costInput && costInput.value) ? parseInt(costInput.value) : Math.max(1, Math.floor(power / 5));
@@ -834,9 +848,13 @@ window.saveCustomCard = () => {
   if (!canvas) return;
   const isSpecial = document.getElementById('is-special').value === 'special';
   const name = document.getElementById('card-name').value;
-  let power = parseInt(document.getElementById('card-power').value) || 0;
-  if (power > 20) power = 20;
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
+  let power = parseInt(document.getElementById('card-power').value) || 0;
+
+  if (effect === 'energy_gain') power = 5;
+  else if (!['attack', 'heal', 'defense'].includes(effect)) power = 1;
+
+  if (power > 20) power = 20;
   const element = document.getElementById('card-element').value;
   const costInput = document.getElementById('card-cost');
   let cost = parseInt(costInput.value) || Math.max(1, Math.floor(power / 5));
