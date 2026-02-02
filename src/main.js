@@ -441,6 +441,24 @@ function renderCardCreator() {
       <div class="creator-layout">
         <div class="form-area">
           <div class="input-group">
+             <label>レアリティ (Rarity)</label>
+             <select id="card-rarity" onchange="updatePreview()">
+               <option value="common">コモン (Common)</option>
+               <option value="rare">レア (Rare)</option>
+               <option value="epic">エピック (Epic)</option>
+               <option value="legendary">レジェンダリー (Legendary)</option>
+             </select>
+          </div>
+          <div class="input-group">
+             <label>フォント (Font Customization)</label>
+             <select id="card-font" onchange="updatePreview()">
+               <option value="'Noto Sans JP', sans-serif">標準 (Noto Sans)</option>
+               <option value="'Orbitron', sans-serif">SF風 (Orbitron)</option>
+               <option value="'Mochiy Pop One', sans-serif">ポップ (Mochiy Pop)</option>
+               <option value="'Cinzel', serif">エピック (Cinzel)</option>
+             </select>
+          </div>
+          <div class="input-group">
             <label>カード名</label>
             <input type="text" id="card-name" value="マイカード" oninput="updatePreview()">
           </div>
@@ -519,6 +537,9 @@ function renderCardCreator() {
                <option value="fire">爆炎</option>
                <option value="ice">氷結</option>
                <option value="thunder">雷撃</option>
+               <option value="galaxy">銀河</option>
+               <option value="rainbow">虹光</option>
+               <option value="holy">聖光</option>
              </select>
           </div>
           <div class="input-group">
@@ -807,6 +828,8 @@ window.updatePreview = () => {
   const cost = (costInput && costInput.value) ? parseInt(costInput.value) : Math.max(1, Math.floor(power / 5));
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
+  const rarity = document.getElementById('card-rarity').value;
+  const font = document.getElementById('card-font').value;
 
   // Scale everything by 3x for high quality (internal is 600x900)
   const scale = 3;
@@ -858,6 +881,17 @@ window.updatePreview = () => {
   else ctx.strokeStyle = '#00ffcc';
   ctx.strokeRect(5 * scale, 5 * scale, 190 * scale, 290 * scale);
 
+  // Rarity Marker
+  ctx.font = `bold ${10 * scale}px Arial`;
+  const rarityJP = { common: 'C', rare: 'R', epic: 'E', legendary: 'L' }[rarity];
+  const rarityColor = { common: '#aaa', rare: '#00a2ff', epic: '#a000ff', legendary: '#ffaa00' }[rarity];
+  ctx.fillStyle = rarityColor;
+  ctx.beginPath();
+  ctx.arc(20 * scale, 32 * scale, 8 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillText(rarityJP, 20 * scale, 35.5 * scale);
+
   // Text (Japanese localized) with shadow for readability
   ctx.shadowColor = 'rgba(0,0,0,0.8)';
   ctx.shadowBlur = 4 * scale;
@@ -866,13 +900,15 @@ window.updatePreview = () => {
 
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
-  ctx.font = `bold ${18 * scale}px Arial`;
+
+  // Apply Custom Font
+  ctx.font = `bold ${18 * scale}px ${font}`;
   ctx.fillText(name, 100 * scale, 35 * scale);
 
-  ctx.font = `bold ${32 * scale}px Arial`;
+  ctx.font = `bold ${32 * scale}px ${font}`;
   ctx.fillText(power, 100 * scale, 230 * scale);
 
-  ctx.font = `bold ${16 * scale}px Arial`;
+  ctx.font = `bold ${16 * scale}px ${font}`;
   ctx.fillStyle = '#00aaff';
   ctx.fillText(`コスト: ${cost}`, 100 * scale, 255 * scale);
 
@@ -959,6 +995,8 @@ window.saveCustomCard = () => {
 
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
+  const rarity = document.getElementById('card-rarity').value;
+  const font = document.getElementById('card-font').value;
 
   const skills = [];
   if (document.getElementById('skill-vampire')?.checked) skills.push('vampire');
@@ -971,6 +1009,7 @@ window.saveCustomCard = () => {
     const newCard = {
       id: 'c' + Date.now(),
       name, power, effectId: effect, element, cost, frame, vfx,
+      rarity, font,
       skills,
       flavor: document.getElementById('card-flavor')?.value || "",
       isSpecial: isSpecial,
@@ -1102,8 +1141,14 @@ function renderBattle(gameState) {
         ${card.image ? `<img src="${card.image}">` : ''}
         <div class="card-name-label">${card.name}</div>
         <div class="card-power-label">${card.power}</div>
+        <div style="font-size: 0.65rem; color: #888; text-align: center; margin-bottom: 2px;">
+          ${{ attack: '攻撃', heal: '回復', defense: '防御', energy_gain: 'エネ獲得', status_clear: '状態浄化', stun_only: 'スタン', poison_only: '毒' }[card.effectId] || card.effectId}
+        </div>
         <div class="skill-tags-mini">
-           ${(card.skills || []).map(sk => `<div class="card-skill-tag">${sk}</div>`).join('')}
+           ${(card.skills || []).map(sk => {
+      const skJP = { vampire: '吸血', piercing: '貫通', poison: '毒', stun: 'スタン', twinStrike: '二連' }[sk] || sk;
+      return `<div class="card-skill-tag">${skJP}</div>`;
+    }).join('')}
         </div>
         ${(card.effectId === 'attack' && !isBasic && !card.isSpecial) ? `
           <button class="summon-btn-mini" onclick="event.stopPropagation(); playCardWithObjID('${card.id}', 'summon')" ${isDisabled ? 'disabled' : ''}>召喚</button>
@@ -1236,12 +1281,14 @@ window.renderGallery = () => {
     const skills = Array.isArray(card.skills) ? card.skills : [];
     const image = card.image || '';
     const flavor = card.flavor || '';
+    const rarity = card.rarity || 'common';
+    const rarityJP = { common: 'コモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンダリー' }[rarity];
 
     const elementJP = { fire: '火', water: '水', wood: '木', none: '無' }[element] || '無';
     const effectJP = { attack: '攻撃', heal: '回復', defense: '防御', energy_gain: 'エネ獲得', status_clear: '状態浄化', stun_only: 'スタン付与', poison_only: '毒付与' }[effectId] || effectId;
 
     return `
-            <div class="gallery-item glass">
+            <div class="gallery-item glass rarity-${rarity}">
               ${image ? `<img src="${image}" class="gallery-card-img">` : '<div class="no-img-placeholder">No Image</div>'}
               <div class="gallery-card-info">
                 <div class="gallery-card-name">${name}</div>
@@ -1256,7 +1303,7 @@ window.renderGallery = () => {
       return `<span class="gallery-skill-tag">${skillJP}</span>`;
     }).join('')}
                 </div>
-                <div class="gallery-card-meta">${elementJP}属性 | ${effectJP}</div>
+                <div class="gallery-card-meta">${elementJP}属性 | ${effectJP} | ${rarityJP}</div>
                 
                 <div style="margin-top: 10px;">
                   <button class="secondary btn-dl-card" style="width: 100%; font-size: 0.8rem; padding: 5px;" 
