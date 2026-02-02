@@ -849,14 +849,24 @@ window.updatePreview = () => {
 
   // Scale everything by 3x for high quality (internal is 600x900)
   const scale = 3;
+  const margin = 15 * scale;
+  const maxWidth = canvas.width - (margin * 2);
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Background (Fallback dark color)
   ctx.fillStyle = '#1a1a24';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Full-card Image logic
+  // Full-card Image logic with Clipping
   if (loadedImage) {
+    ctx.save();
+    // Create clipping path for the inner frame (5*scale margin + 1*scale for safety)
+    const clipMargin = 6 * scale;
+    ctx.beginPath();
+    ctx.rect(clipMargin, clipMargin, canvas.width - (clipMargin * 2), canvas.height - (clipMargin * 2));
+    ctx.clip();
+
     const targetRatio = canvas.width / canvas.height;
     const imgRatio = loadedImage.width / loadedImage.height;
 
@@ -873,6 +883,7 @@ window.updatePreview = () => {
       sY = (loadedImage.height - sH) / 2;
     }
     ctx.drawImage(loadedImage, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
   }
 
   // UI Overlays for Readability
@@ -897,16 +908,17 @@ window.updatePreview = () => {
   else ctx.strokeStyle = '#00ffcc';
   ctx.strokeRect(5 * scale, 5 * scale, 190 * scale, 290 * scale);
 
-  // Rarity Marker
+  // Rarity Marker (Moved to Bottom-Left)
   ctx.font = `bold ${10 * scale}px Arial`;
   const rarityJP = { common: 'C', rare: 'R', epic: 'E', legendary: 'L' }[rarity];
   const rarityColor = { common: '#aaa', rare: '#00a2ff', epic: '#a000ff', legendary: '#ffaa00' }[rarity];
   ctx.fillStyle = rarityColor;
   ctx.beginPath();
-  ctx.arc(20 * scale, 32 * scale, 8 * scale, 0, Math.PI * 2);
+  ctx.arc(20 * scale, 275 * scale, 10 * scale, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.fillText(rarityJP, 20 * scale, 35.5 * scale);
+  ctx.textAlign = 'center';
+  ctx.fillText(rarityJP, 20 * scale, 279 * scale);
 
   // Text (Japanese localized) with shadow for readability
   ctx.shadowColor = 'rgba(0,0,0,0.8)';
@@ -919,30 +931,33 @@ window.updatePreview = () => {
 
   // Apply Custom Font
   ctx.font = `bold ${18 * scale}px ${font}`;
-  ctx.fillText(name, 100 * scale, 35 * scale);
+  ctx.fillText(name, canvas.width / 2, 35 * scale, maxWidth);
 
   ctx.font = `bold ${32 * scale}px ${font}`;
-  ctx.fillText(power, 100 * scale, 230 * scale);
+  ctx.fillText(power, canvas.width / 2, 230 * scale, maxWidth);
 
   ctx.font = `bold ${16 * scale}px ${font}`;
   ctx.fillStyle = '#00aaff';
-  ctx.fillText(`コスト: ${cost}`, 100 * scale, 255 * scale);
+  ctx.fillText(`コスト: ${cost}`, canvas.width / 2, 255 * scale, maxWidth);
 
   ctx.font = `bold ${12 * scale}px Arial`;
   ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
 
   const elementJP = { fire: '火', water: '水', wood: '木', none: '無' }[element] || '無';
   const effectJP = { attack: '攻撃', heal: '回復', defense: '防御', energy_gain: 'エネ獲得', status_clear: '状態浄化', stun_only: 'スタン付与', poison_only: '毒付与' }[effect] || effect;
-  ctx.fillText(`${elementJP}属性 / ${effectJP}`, 100 * scale, 270 * scale);
+  ctx.fillText(`${elementJP}属性 / ${effectJP}`, canvas.width / 2, 270 * scale, maxWidth);
 
   // Flavor Text
   const flavor = document.getElementById('card-flavor')?.value || '';
   if (flavor) {
     ctx.font = `italic ${10 * scale}px Arial`;
     ctx.fillStyle = '#ccc';
-    ctx.fillText(flavor.substring(0, 20), 100 * scale, 195 * scale);
+    // Simple line-breaking for flavor text
     if (flavor.length > 20) {
-      ctx.fillText(flavor.substring(20, 40), 100 * scale, 207 * scale);
+      ctx.fillText(flavor.substring(0, 20), canvas.width / 2, 195 * scale, maxWidth);
+      ctx.fillText(flavor.substring(20, 40), canvas.width / 2, 207 * scale, maxWidth);
+    } else {
+      ctx.fillText(flavor, canvas.width / 2, 200 * scale, maxWidth);
     }
   }
 
@@ -957,7 +972,7 @@ window.updatePreview = () => {
   const roleMap = { attacker: '🗡️ アタッカー', guardian: '🛡️ ガーディアン', energy: '🔋 エネ供給' };
   ctx.font = `bold ${12 * scale}px Arial`;
   ctx.fillStyle = '#ffea00';
-  ctx.fillText(roleMap[role], 100 * scale, 285 * scale);
+  ctx.fillText(roleMap[role], canvas.width / 2, 285 * scale, maxWidth);
 
   // Preview Skills
   const skills = [];
@@ -970,7 +985,7 @@ window.updatePreview = () => {
   if (skills.length > 0) {
     ctx.font = `${10 * scale}px Arial`;
     ctx.fillStyle = '#aaa';
-    ctx.fillText(skills.join(' / '), 100 * scale, 292 * scale);
+    ctx.fillText(skills.join(' / '), canvas.width / 2, 295 * scale, maxWidth);
   }
 };
 
