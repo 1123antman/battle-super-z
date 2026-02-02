@@ -260,8 +260,9 @@ option {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    min-height: 100px;
+    min-height: 200px;
     margin: 10px 0;
+    overflow: hidden;
 }
 
 .my-area {
@@ -273,30 +274,48 @@ option {
 
 .log-area {
     flex-grow: 1;
-    padding: 12px;
+    padding: 15px;
     overflow-y: auto;
-    font-family: monospace;
-    font-size: 0.9rem;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid #333;
-    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .log-entry {
-    margin-bottom: 5px;
-    border-left: 2px solid transparent;
-    padding-left: 8px;
+    margin-bottom: 10px;
+    border-left: 3px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 6px 6px 0;
+    animation: slideInLog 0.3s ease-out;
+}
+
+@keyframes slideInLog {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .log-important {
     border-left-color: var(--primary-color);
     color: #fff;
-    background: rgba(0, 242, 255, 0.05);
+    background: rgba(0, 242, 255, 0.08);
 }
 
 .log-danger {
     border-left-color: var(--secondary-color);
-    color: #ff8ab6;
+    color: #ffb3d1;
+    background: rgba(255, 0, 230, 0.08);
 }
 
 /* Cards & Hand */
