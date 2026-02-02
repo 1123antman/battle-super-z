@@ -1092,7 +1092,17 @@ window.downloadCardImage = (imageData, fileName) => {
 };
 
 window.renderGallery = () => {
-  const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+  let myCards = [];
+  try {
+    myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+    if (!Array.isArray(myCards)) myCards = [];
+  } catch (e) {
+    console.error("Failed to parse my_cards", e);
+    myCards = [];
+  }
+
+  // Clean up data: filter out nulls/undefined and ensure they are objects
+  const validCards = myCards.filter(c => c && typeof c === 'object');
 
   const html = `
     <div class="gallery-container">
@@ -1100,28 +1110,38 @@ window.renderGallery = () => {
       <p style="color: #aaa; margin-bottom: 20px;">あなたが作成したオリジナルカードの一覧です。保存ボタンから画像をダウンロードできます。</p>
       
       <div class="gallery-grid">
-        ${myCards.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">まだカードを作成していません</p>' : ''}
-        ${myCards.map((card, idx) => `
-          <div class="gallery-item glass">
-            ${card.image ? `<img src="${card.image}" class="gallery-card-img">` : '<div class="no-img-placeholder">No Image</div>'}
-            <div class="gallery-card-info">
-              <div class="gallery-card-name">${card.name}</div>
-              <div class="gallery-card-stats">
-                <span class="stat-power">${card.effectId === 'attack' ? '⚔️' : card.effectId === 'heal' ? '❤️' : '🛡️'} ${card.power}</span>
-                <span class="stat-cost">🔋 ${card.cost}</span>
-              </div>
-              <div class="gallery-card-skills">
-                ${(card.skills || []).map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
-              </div>
-              <div class="gallery-card-meta">${(card.element || 'none').toUpperCase()} | ${(card.effectId || 'UNKNOWN').toUpperCase()}</div>
-              
-              <div style="margin-top: 10px;">
-                <button class="secondary btn-dl-card" style="width: 100%; font-size: 0.8rem; padding: 5px;" 
-                  data-idx="${idx}" ${!card.image ? 'disabled' : ''}>📥 画像を保存</button>
+        ${validCards.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">まだカードを作成していません</p>' : ''}
+        ${validCards.map((card, idx) => {
+    const name = card.name || '無名のカード';
+    const power = card.power || 0;
+    const cost = card.cost || 0;
+    const effectId = (card.effectId || 'attack').toLowerCase();
+    const element = (card.element || 'none').toLowerCase();
+    const skills = Array.isArray(card.skills) ? card.skills : [];
+    const image = card.image || '';
+
+    return `
+            <div class="gallery-item glass">
+              ${image ? `<img src="${image}" class="gallery-card-img">` : '<div class="no-img-placeholder">No Image</div>'}
+              <div class="gallery-card-info">
+                <div class="gallery-card-name">${name}</div>
+                <div class="gallery-card-stats">
+                  <span class="stat-power">${effectId === 'attack' ? '⚔️' : effectId === 'heal' ? '❤️' : '🛡️'} ${power}</span>
+                  <span class="stat-cost">🔋 ${cost}</span>
+                </div>
+                <div class="gallery-card-skills">
+                  ${skills.map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
+                </div>
+                <div class="gallery-card-meta">${element.toUpperCase()} | ${effectId.toUpperCase()}</div>
+                
+                <div style="margin-top: 10px;">
+                  <button class="secondary btn-dl-card" style="width: 100%; font-size: 0.8rem; padding: 5px;" 
+                    data-idx="${idx}" ${!image ? 'disabled' : ''}>📥 画像を保存</button>
+                </div>
               </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+  }).join('')}
       </div>
       
       <div style="margin-top: 30px; text-align: center;">
@@ -1131,13 +1151,12 @@ window.renderGallery = () => {
   `;
   showView('gallery', html);
 
-  // Use event delegation or specific listeners to avoid string escaping nightmare
   document.querySelectorAll('.btn-dl-card').forEach(btn => {
     btn.onclick = (e) => {
       const idx = e.target.getAttribute('data-idx');
-      const card = myCards[idx];
+      const card = validCards[idx];
       if (card && card.image) {
-        downloadCardImage(card.image, card.name);
+        downloadCardImage(card.image, card.name || 'card');
       }
     };
   });
