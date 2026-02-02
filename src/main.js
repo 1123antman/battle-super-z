@@ -203,7 +203,6 @@ window.renderRules = () => {
         <h2>2. デッキ編成のルール</h2>
         <ul>
           <li>デッキは<span class="highlight">最大15枚</span>のカードで構成されます。</li>
-          <li>カードの<span class="highlight">合計コストは50以下</span>である必要があります。</li>
           <li>同じカード（IDが同じもの）はデッキに<span class="highlight">1枚</span>しか入れられません。</li>
           <li><span class="danger">手札枯渇ペナルティ</span>: デッキのカードをすべて使い切ると、毎ターン終了時に <span class="danger">5 HP</span> のダメージを受けます。</li>
         </ul>
@@ -732,7 +731,7 @@ function renderDeckEditor() {
   const html = `
     <div class="deck-editor-container">
       <h2>デッキ編成</h2>
-      <p style="color: #aaa; margin-bottom: 20px;">制約: 最大15枚 かつ 合計コスト50以下<br>
+      <p style="color: #aaa; margin-bottom: 20px;">制約: 最大15枚<br>
       基本の「攻撃・シールド・回復」は何度でも使えます。</p>
       <div class="deck-editor-layout">
         <div class="available-cards card-list-section">
@@ -757,7 +756,6 @@ function renderDeckEditor() {
         </div>
         <div class="current-deck card-list-section">
           <h3>現在のデッキ (<span id="deck-count">${currentDeck.length}</span> / 15)</h3>
-          <p>合計：<span id="deck-total-cost" style="color: ${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0) > 50 ? '#ff3333' : '#33ff33'}">${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0)}</span> / 50</p>
           <div id="deck-grid" class="card-grid">
             ${currentDeck.map((card, idx) => `
               <div class="editor-card" onclick="removeFromDeck(${idx})">
@@ -786,7 +784,6 @@ function addToDeck(cardId) {
   const currentTotalCost = deck.reduce((sum, c) => sum + (c.cost || 0), 0);
 
   if (deck.length >= 15) return alert("デッキは15枚までです");
-  if (currentTotalCost + cardCost > 50) return alert("合計コストが50を超えてしまいます");
   if (deck.some(c => c.id === card.id)) return alert("同じカードは1枚までです");
 
   deck.push(card);
