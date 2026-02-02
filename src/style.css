@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@400;700;900&display=swap');
+
 :root {
     --bg-color: #06060c;
     --text-color: #f0f0f5;
@@ -9,8 +11,6 @@
     --font-family: 'Inter', 'Outfit', 'Helvetica Neue', Arial, sans-serif;
     --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@400;700;900&display=swap');
 
 * {
     box-sizing: border-box;
