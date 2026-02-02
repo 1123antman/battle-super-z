@@ -274,6 +274,9 @@ window.endTurn = () => {
 
 socket.on('game_over', (data) => {
   const isWinner = data.winnerId === socket.id;
+  const resultText = isWinner ? '【勝利】対戦に勝利しました！' : '【敗北】対戦に敗北しました...';
+  battleLogs.push(`<div class="log-entry ${isWinner ? 'log-important' : 'log-danger'}" style="text-align:center; font-weight:bold; font-size:1.2rem; border:none; margin:10px 0">${resultText}</div>`);
+  updateLogs();
   saveWinLoss(isWinner ? 'win' : 'loss');
   showGameOver(isWinner ? 'win' : 'lose');
 });
@@ -301,11 +304,19 @@ socket.on('action_performed', (data) => {
   console.log("Action performed:", data);
   isActing = false;
 
-  // [NEW] Visual Feedback for impact
+  // New visual feedback
   if (data.logs && data.logs.length > 0) {
     const logsText = data.logs.join(' ');
-    if (logsText.includes('攻撃') || logsText.includes('💥')) {
+    const isAttack = logsText.includes('攻撃') || logsText.includes('💥') || logsText.includes('✨ 有効属性') || logsText.includes('💦 不利属性');
+
+    if (isAttack) {
       triggerShake();
+      const element = data.cardData.element || 'fire';
+      // Find target DOM element (simplified: apply to all opponents or the one with specific ID if we had it)
+      // For now, let's just trigger a global VFX or target-specific if we find it
+      document.querySelectorAll('.player-card.opponent').forEach(el => {
+        triggerVFX(element, el);
+      });
       playSE('attack');
     } else if (logsText.includes('回復')) {
       playSE('heal');
@@ -317,9 +328,27 @@ socket.on('action_performed', (data) => {
   if (data.cardData && data.cardData.image) {
     battleLogs.push(`<div class="log-card"><img src="${data.cardData.image}" width="50" height="50"> <span>${data.cardData.name || 'Card'}</span> used!</div>`);
   }
-  if (data.logs) battleLogs.push(...data.logs);
+  if (data.logs) {
+    console.log('[LOG_DEBUG] Received logs:', data.logs);
+    data.logs.forEach(log => {
+      let cls = '';
+      if (log.includes('有効属性') || log.includes('吸血') || log.includes('貫通') || log.includes('二連撃')) cls = 'log-important';
+      if (log.includes('不利属性') || log.includes('ライフが 5 減少') || log.includes('毒のダメージ')) cls = 'log-danger';
+      console.log('[LOG_DEBUG] Adding log:', log, 'with class:', cls);
+      battleLogs.push(`<div class="log-entry ${cls}">${log}</div>`);
+    });
+    console.log('[LOG_DEBUG] Total battleLogs count:', battleLogs.length);
+  }
   renderBattle(data.gameState);
 });
+
+function triggerVFX(type, targetEl) {
+  if (!targetEl) return;
+  const vfx = document.createElement('div');
+  vfx.className = `vfx-layer vfx-${type}`;
+  targetEl.appendChild(vfx);
+  setTimeout(() => vfx.remove(), 600);
+}
 
 function triggerShake() {
   const battle = document.querySelector('.battle-container');
@@ -428,6 +457,25 @@ function renderCardCreator() {
             <input type="number" id="card-cost" value="2" min="1" max="10" oninput="updatePreview()">
             <small>※未入力時はパワーに応じて自動計算されます</small>
           </div>
+          <div class="input-group" style="align-items:flex-start">
+             <label>スキル追加 (1つまで)</label>
+             <div class="skill-selector">
+                <input type="checkbox" id="skill-vampire" class="skill-checkbox" onchange="limitSkill(this); updatePreview()">
+                <label for="skill-vampire" class="skill-label">🧛 吸血</label>
+                
+                <input type="checkbox" id="skill-piercing" class="skill-checkbox" onchange="limitSkill(this); updatePreview()">
+                <label for="skill-piercing" class="skill-label">🎯 貫通</label>
+                
+                <input type="checkbox" id="skill-poison" class="skill-checkbox" onchange="limitSkill(this); updatePreview()">
+                <label for="skill-poison" class="skill-label">🤢 毒付与</label>
+                
+                <input type="checkbox" id="skill-stun" class="skill-checkbox" onchange="limitSkill(this); updatePreview()">
+                <label for="skill-stun" class="skill-label">😵 スタン付与</label>
+                
+                <input type="checkbox" id="skill-twin" class="skill-checkbox" onchange="limitSkill(this); updatePreview()">
+                <label for="skill-twin" class="skill-label">⚔️ 二連撃</label>
+             </div>
+          </div>
           <div class="input-group">
              <label>演出エフェクト</label>
              <select id="card-vfx" onchange="updatePreview()">
@@ -435,6 +483,14 @@ function renderCardCreator() {
                <option value="fire">爆炎</option>
                <option value="ice">氷結</option>
                <option value="thunder">雷撃</option>
+             </select>
+          </div>
+          <div class="input-group">
+             <label>召喚時の役割 (召喚ユニット時)</label>
+             <select id="summon-role" onchange="updatePreview()">
+               <option value="attacker">アタッカー (標準・攻撃力重視)</option>
+               <option value="guardian">ガーディアン (身代わり・防御重視)</option>
+               <option value="energy">エネルギー供給 (毎ターン +1 エネルギー)</option>
              </select>
           </div>
           <div class="input-group">
@@ -451,6 +507,11 @@ function renderCardCreator() {
           </div>
           <button onclick="saveCustomCard()">保存して戻る</button>
           <button onclick="showView('title')" class="secondary">キャンセル</button>
+          
+          <hr style="margin: 30px 0; border: 1px solid rgba(255,255,255,0.1);">
+          <h3 style="margin-bottom: 15px;">作成済みカード</h3>
+          <div id="custom-cards-list" style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+          </div>
         </div>
         <div class="preview-area">
           <canvas id="card-canvas" width="200" height="300"></canvas>
@@ -459,8 +520,42 @@ function renderCardCreator() {
     </div>
   `;
   showView('creator', html);
+  renderCustomCardsList();
   setTimeout(updatePreview, 100); // Wait for DOM
 }
+
+window.renderCustomCardsList = () => {
+  const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+  const container = document.getElementById('custom-cards-list');
+  if (!container) return;
+
+  if (myCards.length === 0) {
+    container.innerHTML = '<p style="color: #888; text-align: center;">まだカードを作成していません</p>';
+    return;
+  }
+
+  container.innerHTML = myCards.map((card, idx) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 6px;">
+      <div>
+        <strong>${card.name}</strong>
+        <span style="color: #888; margin-left: 10px;">${card.effectId === 'attack' ? '⚔️' : card.effectId === 'heal' ? '❤️' : '🛡️'} ${card.power}</span>
+        ${(card.skills && card.skills.length > 0) ? `<span style="color: var(--accent-color); margin-left: 10px;">${card.skills.join(', ')}</span>` : ''}
+      </div>
+      <button onclick="deleteCustomCard(${idx})" class="secondary" style="padding: 5px 15px; font-size: 0.8rem;">削除</button>
+    </div>
+  `).join('');
+};
+
+window.deleteCustomCard = (index) => {
+  const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+  const card = myCards[index];
+  if (confirm(`「${card.name}」を削除しますか？この操作は取り消せません。`)) {
+    myCards.splice(index, 1);
+    localStorage.setItem('my_cards', JSON.stringify(myCards));
+    renderCustomCardsList();
+    alert('カードを削除しました');
+  }
+};
 
 window.toggleSpecialUI = () => {
   const isSpecial = document.getElementById('is-special').value === 'special';
@@ -487,41 +582,54 @@ window.handleImageUpload = (input) => {
 };
 
 const ALL_PRESET_CARDS = [
-  // Fire
-  { id: 'p1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2 },
-  { id: 'p2', name: "爆炎烈破", effectId: "attack", power: 18, element: "fire", cost: 4 },
-  { id: 'p3', name: "フレア・バースト", effectId: "attack", power: 15, element: "fire", cost: 3 },
-  { id: 'p4', name: "プロミネンス", effectId: "attack", power: 20, element: "fire", cost: 5 },
-  { id: 'p5', name: "焚き火", effectId: "heal", power: 8, element: "fire", cost: 2 },
-  { id: 'p6', name: "火山弾", effectId: "attack", power: 14, element: "fire", cost: 3 },
-  { id: 'p7', name: "ヒート・シールド", effectId: "defense", power: 12, element: "fire", cost: 2 },
-  { id: 'p7_2', name: "イフリートの牙", effectId: "attack", power: 16, element: "fire", cost: 3 },
+  // Fire - Aggressive with damage-focused skills
+  { id: 'p1', name: "火の剣", effectId: "attack", power: 12, element: "fire", cost: 2, skills: [] },
+  { id: 'p2', name: "爆炎烈破", effectId: "attack", power: 18, element: "fire", cost: 4, skills: ['piercing'] },
+  { id: 'p3', name: "フレア・バースト", effectId: "attack", power: 15, element: "fire", cost: 3, skills: ['twinStrike'] },
+  { id: 'p4', name: "プロミネンス", effectId: "attack", power: 20, element: "fire", cost: 5, skills: ['piercing'] },
+  { id: 'p5', name: "焚き火", effectId: "heal", power: 8, element: "fire", cost: 2, skills: [] },
+  { id: 'p6', name: "火山弾", effectId: "attack", power: 14, element: "fire", cost: 3, skills: [] },
+  { id: 'p7', name: "ヒート・シールド", effectId: "defense", power: 12, element: "fire", cost: 2, skills: [] },
+  { id: 'p7_2', name: "イフリートの牙", effectId: "attack", power: 16, element: "fire", cost: 3, skills: ['vampire'] },
 
-  // Water
-  { id: 'p8', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3 },
-  { id: 'p9', name: "アクア・ヒール", effectId: "heal", power: 12, element: "water", cost: 2 },
-  { id: 'p10', name: "激流", effectId: "attack", power: 14, element: "water", cost: 3 },
-  { id: 'p11', name: "深海の囁き", effectId: "heal", power: 18, element: "water", cost: 4 },
-  { id: 'p12', name: "氷結の波動", effectId: "attack", power: 10, element: "water", cost: 2 },
-  { id: 'p13', name: "ミスト・スクリーン", effectId: "defense", power: 20, element: "water", cost: 4 },
-  { id: 'p14', name: "バブル・ショット", effectId: "attack", power: 11, element: "water", cost: 2 },
-  { id: 'p14_2', name: "海神の怒り", effectId: "attack", power: 19, element: "water", cost: 5 },
+  // Water - Control and debuff focused
+  { id: 'p8', name: "水の壁", effectId: "defense", power: 15, element: "water", cost: 3, skills: [] },
+  { id: 'p9', name: "アクア・ヒール", effectId: "heal", power: 12, element: "water", cost: 2, skills: [] },
+  { id: 'p10', name: "激流", effectId: "attack", power: 14, element: "water", cost: 3, skills: ['stun'] },
+  { id: 'p11', name: "深海の囁き", effectId: "heal", power: 18, element: "water", cost: 4, skills: [] },
+  { id: 'p12', name: "氷結の波動", effectId: "attack", power: 10, element: "water", cost: 2, skills: [] },
+  { id: 'p13', name: "ミスト・スクリーン", effectId: "defense", power: 20, element: "water", cost: 4, skills: [] },
+  { id: 'p14', name: "バブル・ショット", effectId: "attack", power: 11, element: "water", cost: 2, skills: [] },
+  { id: 'p14_2', name: "海神の怒り", effectId: "attack", power: 19, element: "water", cost: 5, skills: ['poison'] },
 
-  // Wood
-  { id: 'p15', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4 },
-  { id: 'p16', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3 },
-  { id: 'p17', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1 },
-  { id: 'p18', name: "世界樹の種", effectId: "heal", power: 20, element: "wood", cost: 5 },
-  { id: 'p19', name: "根の束縛", effectId: "defense", power: 10, element: "wood", cost: 2 },
-  { id: 'p20', name: "木霊の舞", effectId: "attack", power: 12, element: "wood", cost: 2 },
-  { id: 'p21', name: "リーフ・カッター", effectId: "attack", power: 13, element: "wood", cost: 2 },
-  { id: 'p21_2', name: "精霊の息吹", effectId: "heal", power: 10, element: "wood", cost: 1 },
+  // Wood - Sustain and poison focused
+  { id: 'p15', name: "大盾", element: "wood", effectId: "defense", power: 20, cost: 4, skills: [] },
+  { id: 'p16', name: "森林の加護", effectId: "heal", power: 15, element: "wood", cost: 3, skills: [] },
+  { id: 'p17', name: "イバラの棘", effectId: "attack", power: 8, element: "wood", cost: 1, skills: ['poison'] },
+  { id: 'p18', name: "世界樹の種", effectId: "heal", power: 20, element: "wood", cost: 5, skills: [] },
+  { id: 'p19', name: "根の束縛", effectId: "defense", power: 10, element: "wood", cost: 2, skills: [] },
+  { id: 'p20', name: "木霊の舞", effectId: "attack", power: 12, element: "wood", cost: 2, skills: [] },
+  { id: 'p21', name: "リーフ・カッター", effectId: "attack", power: 13, element: "wood", cost: 2, skills: ['vampire'] },
+  { id: 'p21_2', name: "精霊の息吹", effectId: "heal", power: 10, element: "wood", cost: 1, skills: [] },
 
-  // None
-  { id: 'p22', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1 },
-  { id: 'p23', name: "突撃", effectId: "attack", power: 12, element: "none", cost: 2 },
-  { id: 'p24', name: "救急キット", effectId: "heal", power: 10, element: "none", cost: 2 }
+  // None - Versatile with mixed skills
+  { id: 'p22', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1, skills: ['twinStrike'] },
+  { id: 'p23', name: "突撃", effectId: "attack", power: 12, element: "none", cost: 2, skills: [] },
+  { id: 'p24', name: "救急キット", effectId: "heal", power: 10, element: "none", cost: 2, skills: [] }
 ];
+
+// --- Card Management ---
+
+window.getCardById = (id) => {
+  const baseCards = [
+    { id: 'base_atk', name: "基本攻撃", effectId: "attack", power: 10, target: "enemy", cost: 2 },
+    { id: 'base_def', name: "基本シールド", effectId: "defense", power: 10, target: "self", cost: 2 },
+    { id: 'base_heal', name: "基本回復", effectId: "heal", power: 10, target: "self", cost: 2 }
+  ];
+  const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
+  const all = [...baseCards, ...ALL_PRESET_CARDS, ...myCards];
+  return all.find(c => String(c.id) === String(id));
+};
 
 function getMyCards() {
   const customDeck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
@@ -547,22 +655,28 @@ function renderDeckEditor() {
             ${allAvailable.map(card => {
     const inDeck = currentDeck.some(c => c.id === card.id);
     return `
-              <div class="editor-card ${inDeck ? 'card-selected' : ''}" onclick='${inDeck ? '' : `addToDeck(${JSON.stringify(card)})`}'>
-                <div class="card-name">${card.name}</div>
-                <div class="card-info">${card.element || 'none'} / ${card.effectId} (${card.power})</div>
-                ${inDeck ? '<div class="card-tag">選択中</div>' : ''}
-              </div>
-            `}).join('')}
+      <div class="card-btn glass ${inDeck ? 'card-selected' : ''}" onclick="${inDeck ? '' : `addToDeck('${card.id}')`}">
+        <div class="card-cost">${card.cost || Math.max(1, Math.floor(card.power / 5))}</div>
+        ${card.image ? `<img src="${card.image}">` : ''}
+        <div class="card-name-label">${card.name}</div>
+        <div class="card-power-label">${card.power}</div>
+        <div class="skill-tags-mini">
+           ${(card.skills || []).map(sk => `<div class="card-skill-tag">${sk}</div>`).join('')}
+        </div>
+        ${inDeck ? '<div class="card-tag">選択中</div>' : ''}
+      </div>
+    `;
+  }).join('')}
           </div>
         </div>
         <div class="current-deck card-list-section">
           <h3>現在のデッキ (<span id="deck-count">${currentDeck.length}</span> / 10)</h3>
-          <p>合計コスト: <span id="deck-total-cost" style="color: ${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0) > 50 ? '#ff3333' : '#33ff33'}">${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0)}</span> / 50</p>
+          <p>合計：<span id="deck-total-cost" style="color: ${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0) > 50 ? '#ff3333' : '#33ff33'}">${currentDeck.reduce((sum, c) => sum + (c.cost || 0), 0)}</span> / 50</p>
           <div id="deck-grid" class="card-grid">
             ${currentDeck.map((card, idx) => `
-              <div class="editor-card deck-card" onclick="removeFromDeck(${idx})">
-                <div class="card-name">${card.name}</div>
-                <div class="card-info">Cost: ${card.cost}</div>
+              <div class="editor-card" onclick="removeFromDeck(${idx})">
+                <div style="font-size:0.8rem; font-weight:bold">${card.name}</div>
+                <div style="font-size:0.7rem; color:#aaa">Cost: ${card.cost}</div>
               </div>
             `).join('')}
           </div>
@@ -578,7 +692,9 @@ function renderDeckEditor() {
 }
 window.renderDeckEditor = renderDeckEditor;
 
-function addToDeck(card) {
+function addToDeck(cardId) {
+  const card = getCardById(cardId);
+  if (!card) return;
   const deck = JSON.parse(localStorage.getItem('my_custom_deck') || '[]');
   const cardCost = card.cost || Math.max(1, Math.floor((card.power || 0) / 5));
   const currentTotalCost = deck.reduce((sum, c) => sum + (c.cost || 0), 0);
@@ -677,7 +793,36 @@ window.updatePreview = () => {
   ctx.fillText(`COST: ${cost}`, 100, 255);
   ctx.font = '12px Arial';
   ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
-  ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 280);
+  ctx.fillText(`${element.toUpperCase()} ${effect.toUpperCase()}`, 100, 270);
+
+  // Preview Role
+  const role = document.getElementById('summon-role')?.value || 'attacker';
+  const roleMap = { attacker: '🗡️ ATTACKER', guardian: '🛡️ GUARDIAN', energy: '🔋 ENERGY' };
+  ctx.font = 'bold 12px Arial';
+  ctx.fillStyle = '#ffea00';
+  ctx.fillText(roleMap[role], 100, 285);
+
+  // Preview Skills
+  const skills = [];
+  if (document.getElementById('skill-vampire')?.checked) skills.push('Vampire');
+  if (document.getElementById('skill-piercing')?.checked) skills.push('Piercing');
+  if (document.getElementById('skill-poison')?.checked) skills.push('Poison');
+  if (document.getElementById('skill-stun')?.checked) skills.push('Stun');
+  if (document.getElementById('skill-twin')?.checked) skills.push('Twin');
+
+  if (skills.length > 0) {
+    ctx.font = '10px Arial';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(skills.join(' / '), 100, 292);
+  }
+};
+
+window.limitSkill = (clicked) => {
+  if (!clicked.checked) return;
+  const checkboxes = document.querySelectorAll('.skill-checkbox');
+  checkboxes.forEach(cb => {
+    if (cb !== clicked) cb.checked = false;
+  });
 };
 
 window.saveCustomCard = () => {
@@ -702,9 +847,19 @@ window.saveCustomCard = () => {
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
 
+  const skills = [];
+  if (document.getElementById('skill-vampire')?.checked) skills.push('vampire');
+  if (document.getElementById('skill-piercing')?.checked) skills.push('piercing');
+  if (document.getElementById('skill-poison')?.checked) skills.push('poison');
+  if (document.getElementById('skill-stun')?.checked) skills.push('stun');
+  if (document.getElementById('skill-twin')?.checked) skills.push('twinStrike');
+
   const newCard = {
     id: 'c' + Date.now(),
     name, power, effectId: effect, element, cost, frame, vfx,
+    skills,
+    isSpecial: isSpecial,
+    summonRole: document.getElementById('summon-role').value,
     isCustom: true,
     image: canvas.toDataURL('image/png')
   };
@@ -755,17 +910,26 @@ function renderBattle(gameState) {
       
       <div class="opponents-row">
         ${opponents.map(p => `
-          <div class="player-card opponent" data-id="${p.id}">
-            <div class="player-name">${p.playerName || `プレイヤー ${p.id.slice(0, 4)}`}</div>
+          <div class="player-card opponent glass" data-id="${p.id}">
+            <div class="player-name">
+              ${p.element && p.element !== 'none' ? `<span class="element-icon el-${p.element}"></span>` : ''}
+              ${p.playerName || `プレイヤー ${p.id.slice(0, 4)}`}
+            </div>
             <div class="hp-bar"><div class="hp-fill" style="width: ${(p.hp / p.maxHp) * 100}%"></div></div>
+            <div class="status-area">
+               ${(p.status || []).map(s => `<div class="status-icon status-${s.id}" data-duration="${s.duration}">${s.id === 'poison' ? '🤢' : '😵'}</div>`).join('')}
+            </div>
             <div class="stats">HP: ${p.hp} | Shield: ${p.shield}</div>
             <div class="summon-field">
-               ${p.field && p.field.summonedCard ? `
-                 <div class="summoned-unit">
-                   ${p.field.summonedCard.image ? `<img src="${p.field.summonedCard.image}" class="unit-img">` : ''}
-                   <div class="unit-info">⚔️ ${p.field.summonedCard.power} <br> ${p.field.summonedCard.name}</div>
-                 </div>
-               ` : '<div class="empty-field">空きフィールド</div>'}
+                 ${p.field && p.field.summonedCard ? `
+                   <div class="summoned-unit opponent-unit role-${p.field.summonedCard.role}" onclick="event.stopPropagation(); window.lastTargetId='${p.id}'; window.lastTargetType='unit'; playCardWithObjID_UNIT_CLICK()">
+                     ${p.field.summonedCard.image ? `<img src="${p.field.summonedCard.image}" class="unit-img">` : ''}
+                     <div class="unit-info">
+                       ${p.field.summonedCard.role === 'guardian' ? '🛡️' : (p.field.summonedCard.role === 'energy' ? '🔋' : '⚔️')}
+                       ${p.field.summonedCard.power} | ${p.field.summonedCard.name}
+                     </div>
+                   </div>
+                 ` : '<div class="empty-field">空きフィールド</div>'}
             </div>
           </div>
         `).join('')}
@@ -781,16 +945,22 @@ function renderBattle(gameState) {
       </div>
 
       <div class="my-area">
-        <div class="player-card self">
+        <div class="player-card self glass">
           <div class="player-name">${myPlayer.playerName || "自分"}</div>
           <div class="hp-bar"><div class="hp-fill" style="width: ${(myPlayer.hp / myPlayer.maxHp) * 100}%"></div></div>
+          <div class="status-area">
+             ${(myPlayer.status || []).map(s => `<div class="status-icon status-${s.id}" data-duration="${s.duration}">${s.id === 'poison' ? '🤢' : '😵'}</div>`).join('')}
+          </div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
           <div class="energy-display">🔋 エネルギー: ${myPlayer.energy} / ${myPlayer.maxEnergy || 10}</div>
           <div class="summon-field">
                ${myPlayer.field && myPlayer.field.summonedCard ? `
-                 <div class="summoned-unit self-unit">
+                 <div class="summoned-unit self-unit role-${myPlayer.field.summonedCard.role}">
                    ${myPlayer.field.summonedCard.image ? `<img src="${myPlayer.field.summonedCard.image}" class="unit-img">` : ''}
-                   <div class="unit-info">⚔️ ${myPlayer.field.summonedCard.power} <br> ${myPlayer.field.summonedCard.name}</div>
+                   <div class="unit-info">
+                     ${myPlayer.field.summonedCard.role === 'guardian' ? '🛡️' : (myPlayer.field.summonedCard.role === 'energy' ? '🔋' : '⚔️')}
+                     ${myPlayer.field.summonedCard.power} | ${myPlayer.field.summonedCard.name}
+                   </div>
                  </div>
                ` : '<div class="empty-field">空きフィールド</div>'}
           </div>
@@ -800,57 +970,89 @@ function renderBattle(gameState) {
     const isDisabled = checkDisabled(card);
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
     const isBasic = card.id.startsWith('base_');
+    const alreadyUsed = myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id);
+
     return `
-            <div class="card-wrapper ${isDisabled ? 'card-disabled' : ''}">
-                <button class="card-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "use")' ${isDisabled ? 'disabled' : ''} style="${card.image ? `background-image: url(${card.image}); background-size: cover; color: white; text-shadow: 1px 1px 2px black;` : ''}">
-                  <div class="card-cost">${cost}</div>
-                  ${!card.image ? card.name : ''}<br>
-                  <small>${card.element && card.element !== 'none' ? `${card.element} ` : ''}${card.effectId} (${card.power})</small>
-                </button>
-                ${(card.effectId === 'attack' && !isBasic) ? `<button class="summon-btn" onclick='playCardWithObj(${JSON.stringify(card)}, "summon")' ${isDisabled || (myPlayer.usedEffectTypes && myPlayer.usedEffectTypes.includes("summon")) ? 'disabled' : ''}>召喚</button>` : ''}
-            </div>`;
+      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''}" onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
+        <div class="card-cost">${cost}</div>
+        ${card.image ? `<img src="${card.image}">` : ''}
+        <div class="card-name-label">${card.name}</div>
+        <div class="card-power-label">${card.power}</div>
+        <div class="skill-tags-mini">
+           ${(card.skills || []).map(sk => `<div class="card-skill-tag">${sk}</div>`).join('')}
+        </div>
+        ${(card.effectId === 'attack' && !isBasic && !card.isSpecial) ? `
+          <button class="summon-btn-mini" onclick="event.stopPropagation(); playCardWithObjID('${card.id}', 'summon')" ${isDisabled ? 'disabled' : ''}>召喚</button>
+        ` : ''}
+        ${alreadyUsed ? '<div class="card-tag">使用済み</div>' : ''}
+      </div>
+    `;
   }).join('')}
-          <div class="card-wrapper">
-            <button class="card-btn end-turn" onclick="endTurn()" ${!isMyTurn ? 'disabled' : ''}>ターン終了</button>
-            <button onclick="goToHome(true)" class="home-btn-mini" style="margin-top:5px;">ホーム</button>
-          </div>
+        </div>
+        <div style="text-align: center; margin-top: 10px;">
+          <button class="primary" onclick="${!isMyTurn ? '' : 'endTurn()'}" ${!isMyTurn ? 'disabled' : ''}>ターン終了</button>
         </div>
       </div>
     </div>`;
+
   showView('battle', html);
   updateLogs();
 }
 
 let isActing = false; // [NEW] Flag to prevent double-click / simultaneous sends
 
-window.playCardWithObj = (card, actionType = 'use') => {
+window.playCardWithObjID = (cardId, actionType = 'use') => {
+  const card = getCardById(cardId);
+  console.log(`[DEBUG] Retrieved card:`, card);
+  console.log(`[DEBUG] Card skills:`, card?.skills);
+  if (!card) return;
   if (!currentRoomId || isActing) return;
 
   isActing = true;
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = true);
 
-  let targetId = null;
-  const opponent = document.querySelector('.player-card.opponent');
-  if (opponent) targetId = opponent.dataset.id;
+  let targetId = window.lastTargetId || null;
+  let targetType = window.lastTargetType || 'player';
 
-  console.log(`[ACTION] Playing card ${card.id} (${actionType}) to room ${currentRoomId}. MyID: ${socket.id}`);
+  if (!targetId) {
+    const opponent = document.querySelector('.player-card.opponent');
+    if (opponent) targetId = opponent.dataset.id;
+  }
+
+  console.log(`[ACTION] Playing card ${card.id} (${actionType}) to ${targetType}:${targetId} with skills: ${JSON.stringify(card.skills || [])}`);
 
   socket.emit('play_card', {
     roomId: currentRoomId,
     effectId: card.effectId,
     power: card.power,
     targetId: targetId,
+    targetType: targetType,
     name: card.name,
     image: card.image,
     element: card.element || 'none',
     cost: card.cost || Math.max(1, Math.floor(card.power / 5)),
     isCustom: card.isCustom || false,
+    isSpecial: card.isSpecial || false,
+    summonRole: card.summonRole || 'attacker',
     id: card.id,
-    actionType: actionType
+    actionType: actionType,
+    skills: card.skills || []
   });
 
+  // Reset targeting
+  window.lastTargetId = null;
+  window.lastTargetType = 'player';
+
   // isActing is reset in action_performed or error_message
+};
+
+window.playCardWithObjID_UNIT_CLICK = () => {
+  const logArea = document.getElementById('battle-log');
+  if (logArea) {
+    battleLogs.push(`<div class="log-entry" style="color:var(--accent-color); text-align:center; background:rgba(255,234,0,0.1)">🎯 ターゲットをユニットに変更しました</div>`);
+    updateLogs();
+  }
 };
 
 setupTitleEvents();

@@ -109,8 +109,8 @@ io.on('connection', (socket) => {
             return;
         }
         const { roomId, room } = result;
-
-        console.log(`[PLAY_CARD] From: ${socket.id}, CurrentTurn: ${room.gameState.currentTurnPlayerId}`);
+        const skills = cardData.skills || [];
+        console.log(`[PLAY_CARD] From: ${socket.id}, Card: ${cardData.name}, Skills: ${JSON.stringify(skills)}`);
 
         const actionResult = GameLogic.processCard(room, socket.id, cardData);
         if (actionResult.error) {

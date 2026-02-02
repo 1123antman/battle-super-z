@@ -22,7 +22,7 @@ class GameLogic {
                     summonedCard: null
                 },
                 usedCardIds: [], // [NEW] Track used deck cards
-                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] || 10) : 10
+                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] ?? 10) : 10
             };
         });
 
@@ -40,6 +40,12 @@ class GameLogic {
 
         if (state.currentTurnPlayerId !== playerId) {
             return { error: 'Not your turn (logic check)' };
+        }
+
+        // Check Stun
+        const actorStatus = actor.status || [];
+        if (actorStatus.some(s => s.id === 'stun')) {
+            return { error: 'スタン状態のため行動できません' };
         }
 
         const isBasic = cardData.id && cardData.id.startsWith('base_');
@@ -72,7 +78,9 @@ class GameLogic {
 
         // Mitigation check
         if (initialTarget && initialTarget.hp !== undefined && cardData.effectId === 'attack') {
-            if (initialTarget.field && initialTarget.field.summonedCard) {
+            if (cardData.targetType === 'unit' && initialTarget.field && initialTarget.field.summonedCard) {
+                targets = [{ type: 'unit', ownerId: initialTarget.id, unit: initialTarget.field.summonedCard }];
+            } else if (initialTarget.field && initialTarget.field.summonedCard && initialTarget.field.summonedCard.role === 'guardian') {
                 targets = [{ type: 'unit', ownerId: initialTarget.id, unit: initialTarget.field.summonedCard }];
             } else {
                 targets = [initialTarget];
@@ -86,17 +94,19 @@ class GameLogic {
         const actorName = actor.playerName || actor.id.slice(0, 4);
 
         if (cardData.actionType === 'summon') {
-            if (cardData.effectId !== 'attack') {
-                return { error: 'Only Attack cards can be summoned' };
+            if (cardData.effectId !== 'attack' || cardData.isSpecial) {
+                return { error: 'このカードは召喚できません' };
             }
             const previouslySummoned = actor.field.summonedCard;
             actor.field.summonedCard = {
                 name: cardData.name || 'Summoned Unit',
                 power: parseInt(cardData.power) || 0,
                 image: cardData.image || null,
-                effectId: cardData.effectId
+                effectId: cardData.effectId,
+                role: cardData.summonRole || 'attacker'
             };
-            resultLog.push(`【召喚】${actorName} が ${actor.field.summonedCard.name} (ATK: ${actor.field.summonedCard.power}) を召喚！`);
+            const roleLabels = { attacker: 'アタッカー', guardian: 'ガーディアン', energy: 'エネルギー生産者' };
+            resultLog.push(`【召喚】${actorName} が ${actor.field.summonedCard.name} (${roleLabels[actor.field.summonedCard.role] || 'ユニット'}) を召喚！`);
             if (previouslySummoned) {
                 resultLog.push(`(以前のカード ${previouslySummoned.name} は破壊されました)`);
             }
@@ -104,42 +114,100 @@ class GameLogic {
             // Normal "Use" Logic
             switch (cardData.effectId) {
                 case 'attack':
-                    targets.forEach(target => {
+                    const processAttack = (actor, target, cardData) => {
                         let damage = parseInt(cardData.power) || 10;
+                        const skills = cardData.skills || [];
                         const targetName = target.playerName || (target.id ? target.id.slice(0, 4) : 'Unknown');
 
+                        // 1. Affinity Calculation
+                        let multiplier = 1.0;
+                        const attackerEl = cardData.element;
+                        const defenderEl = target.element || 'none';
+                        if (attackerEl && defenderEl !== 'none') {
+                            if ((attackerEl === 'fire' && defenderEl === 'wood') ||
+                                (attackerEl === 'wood' && defenderEl === 'water') ||
+                                (attackerEl === 'water' && defenderEl === 'fire')) {
+                                multiplier = 1.5;
+                                resultLog.push(`✨ 有効属性！威力 1.5 倍！`);
+                            } else if ((attackerEl === 'fire' && defenderEl === 'water') ||
+                                (attackerEl === 'wood' && defenderEl === 'fire') ||
+                                (attackerEl === 'water' && defenderEl === 'wood')) {
+                                multiplier = 0.5;
+                                resultLog.push(`💦 不利属性... 威力 0.5 倍...`);
+                            }
+                        }
+                        damage = Math.floor(damage * multiplier);
+
+                        // 2. Piercing check (before shield)
+                        const isPiercing = skills.includes('piercing');
+
+                        // 3. Apply Damage
                         if (target.type === 'unit') {
                             const unit = target.unit;
                             const owner = state.players[target.ownerId];
                             const ownerName = owner.playerName || owner.id.slice(0, 4);
                             resultLog.push(`【攻撃】${actorName} が ${ownerName} の召喚ユニット「${unit.name}」を攻撃！`);
 
-                            unit.power -= damage; // Deduct power instead of binary check
+                            unit.power -= damage;
                             if (unit.power <= 0) {
                                 resultLog.push(`💥 威力 ${damage} により、${unit.name} は破壊された！`);
                                 owner.field.summonedCard = null;
                             } else {
                                 resultLog.push(`🛡️ ${unit.name} は耐えたが、残存威力は ${unit.power} に減少した。`);
                             }
-                            return;
-                        }
+                            // Units don't receive status effects, but Vampire can still heal attacker?
+                            // Let's allow Vampire when hitting unit
+                        } else {
+                            const originalDamage = damage;
+                            if (!isPiercing && target.shield > 0) {
+                                if (target.shield >= damage) {
+                                    target.shield -= damage;
+                                    damage = 0;
+                                } else {
+                                    damage -= target.shield;
+                                    target.shield = 0;
+                                }
+                            } else if (isPiercing && target.shield > 0) {
+                                resultLog.push(`🎯 貫通！シールドを無視して攻撃！`);
+                            }
 
-                        const originalDamage = damage;
-                        if (target.shield > 0) {
-                            if (target.shield >= damage) {
-                                target.shield -= damage;
-                                damage = 0;
-                            } else {
-                                damage -= target.shield;
-                                target.shield = 0;
+                            target.hp = Math.max(0, target.hp - damage);
+                            resultLog.push(`【攻撃】${actorName} が ${targetName} に威力 ${originalDamage} の攻撃！`);
+                            if (originalDamage > damage && !isPiercing) {
+                                resultLog.push(`(シールドにより減少: ${originalDamage - damage})`);
+                            }
+                            resultLog.push(`  → ${targetName} の残りHP: ${target.hp}`);
+
+                            // Apply Status Skills only to players
+                            if (skills.includes('poison')) {
+                                if (!target.status) target.status = [];
+                                target.status.push({ id: 'poison', duration: 3 });
+                                resultLog.push(`🤢 ${targetName} は毒になった！`);
+                            }
+                            if (skills.includes('stun')) {
+                                if (!target.status) target.status = [];
+                                target.status.push({ id: 'stun', duration: 1 });
+                                resultLog.push(`😵 ${targetName} はスタンした！`);
                             }
                         }
-                        target.hp = Math.max(0, target.hp - damage);
-                        resultLog.push(`【攻撃】${actorName} が ${targetName} に威力 ${originalDamage} の攻撃！`);
-                        if (originalDamage > damage) {
-                            resultLog.push(`(シールドによりダメージが ${damage} に軽減された)`);
+
+                        // Vampire (trigger always if damage > 0, whether unit or player)
+                        if (skills.includes('vampire') && damage > 0) {
+                            const healAmt = Math.floor(damage / 2);
+                            actor.hp = Math.min(actor.maxHp, actor.hp + healAmt);
+                            resultLog.push(`🧛 吸血！${actorName} は ${healAmt} HP 回復！`);
                         }
-                        resultLog.push(`  → ${targetName} の残りHP: ${target.hp}`);
+                    };
+
+                    console.log(`[SKILL_DEBUG] Processing attack with skills:`, cardData.skills);
+                    targets.forEach(target => {
+                        processAttack(actor, target, cardData);
+                        // Skill: Twin Strike
+                        if (cardData.skills && cardData.skills.includes('twinStrike')) {
+                            console.log(`[SKILL_DEBUG] Twin Strike activated!`);
+                            resultLog.push(`⚔️ 二連撃！`);
+                            processAttack(actor, target, cardData);
+                        }
                     });
                     break;
 
@@ -189,11 +257,31 @@ class GameLogic {
             }
         }
 
-        // Penalty for empty hand (exhausted deck cards)
-        if (currentActor && currentActor.usedCardIds && currentActor.usedCardIds.length >= currentActor.deckSize) {
-            currentActor.hp = Math.max(0, currentActor.hp - 5);
-            resultLogs.push(`🥀 手札が枯渇しているため、${currentActor.playerName || currentActor.id.slice(0, 4)} のライフが 5 減少！ (残りHP: ${currentActor.hp})`);
+        // Status Effects Processing (End of Actor's turn)
+        if (currentActor && currentActor.status) {
+            currentActor.status = currentActor.status.filter(s => {
+                if (s.id === 'poison') {
+                    const dmg = 3;
+                    currentActor.hp = Math.max(0, currentActor.hp - dmg);
+                    resultLogs.push(`🤮 毒のダメージ！ ${currentActor.playerName || currentActor.id.slice(0, 4)} は ${dmg} ダメージ受けた。 (残りHP: ${currentActor.hp})`);
+                }
+
+                s.duration--;
+                if (s.duration <= 0) {
+                    resultLogs.push(`✨ ${currentActor.playerName || currentActor.id.slice(0, 4)} の ${s.id} 状態が解除された。`);
+                    return false;
+                }
+                return true;
+            });
         }
+
+        // Penalty for empty hand (exhausted deck cards) - Applied to ALL players at the end of every turn
+        Object.values(state.players).forEach(player => {
+            if (player.usedCardIds && player.usedCardIds.length >= player.deckSize) {
+                player.hp = Math.max(0, player.hp - 5);
+                resultLogs.push(`🥀 手札が枯渇しているため、${player.playerName || player.id.slice(0, 4)} のライフが 5 減少！ (残りHP: ${player.hp})`);
+            }
+        });
 
         const currentIndex = room.players.indexOf(state.currentTurnPlayerId);
         const nextIndex = (currentIndex + 1) % room.players.length;
@@ -202,7 +290,12 @@ class GameLogic {
         if (state.players[state.currentTurnPlayerId]) {
             const nextActor = state.players[state.currentTurnPlayerId];
             // Recover energy
-            nextActor.energy = Math.min(nextActor.maxEnergy, nextActor.energy + nextActor.energyPerTurn);
+            let recovery = nextActor.energyPerTurn;
+            if (nextActor.field.summonedCard && nextActor.field.summonedCard.role === 'energy') {
+                recovery += 1;
+                resultLogs.push(`🔋 ${nextActor.field.summonedCard.name} によりエネルギー充填！ (+1)`);
+            }
+            nextActor.energy = Math.min(nextActor.maxEnergy, nextActor.energy + recovery);
         }
 
         return {
