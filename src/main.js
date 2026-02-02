@@ -534,6 +534,16 @@ function renderCardCreator() {
   `;
   showView('creator', html);
   renderCustomCardsList();
+
+  // High-res setup: Internal resolution is 3x, Display size is the same
+  const canvas = document.getElementById('card-canvas');
+  if (canvas) {
+    canvas.width = 600;
+    canvas.height = 900;
+    canvas.style.width = "200px";
+    canvas.style.height = "300px";
+  }
+
   setTimeout(updatePreview, 100); // Wait for DOM
 }
 
@@ -775,6 +785,10 @@ window.updatePreview = () => {
   const frame = document.getElementById('card-frame').value;
   const vfx = document.getElementById('card-vfx').value;
 
+  // Scale everything by 3x for high quality (internal is 600x900)
+  const scale = 3;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   // Background
   ctx.fillStyle = '#1a1a24';
   let bgApplied = false;
@@ -787,80 +801,85 @@ window.updatePreview = () => {
     else if (effect === 'heal') ctx.fillStyle = '#113311';
     else if (effect === 'defense') ctx.fillStyle = '#111133';
   }
-  ctx.fillRect(0, 0, 200, 300);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Image Area (scaled)
+  const imgX = 10 * scale;
+  const imgY = 40 * scale;
+  const imgW = 180 * scale;
+  const imgH = 150 * scale;
 
   // Image (Prevent stretching using "cover" logic)
   if (loadedImage) {
-    const targetW = 180;
-    const targetH = 150;
-    const targetRatio = targetW / targetH;
+    const targetRatio = imgW / imgH;
     const imgRatio = loadedImage.width / loadedImage.height;
 
     let sX, sY, sW, sH;
     if (imgRatio > targetRatio) {
-      // Image is wider than target area
       sH = loadedImage.height;
       sW = sH * targetRatio;
       sX = (loadedImage.width - sW) / 2;
       sY = 0;
     } else {
-      // Image is taller than target area
       sW = loadedImage.width;
       sH = sW / targetRatio;
       sX = 0;
       sY = (loadedImage.height - sH) / 2;
     }
-    ctx.drawImage(loadedImage, sX, sY, sW, sH, 10, 40, targetW, targetH);
+    ctx.drawImage(loadedImage, sX, sY, sW, sH, imgX, imgY, imgW, imgH);
   } else {
     ctx.fillStyle = '#333';
-    ctx.fillRect(10, 40, 180, 150);
+    ctx.fillRect(imgX, imgY, imgW, imgH);
     ctx.fillStyle = '#555';
-    ctx.font = '20px Arial';
+    ctx.font = `${20 * scale}px Arial`;
     ctx.textAlign = 'center';
-    ctx.fillText("No Image", 100, 120);
+    ctx.fillText("No Image", 100 * scale, 120 * scale);
   }
 
   // Frame
-  ctx.lineWidth = 6;
+  ctx.lineWidth = 6 * scale;
   if (frame === 'gold') ctx.strokeStyle = '#ffd700';
   else if (frame === 'dark') ctx.strokeStyle = '#444';
   else ctx.strokeStyle = '#00ffcc';
-  ctx.strokeRect(5, 5, 190, 290);
+  ctx.strokeRect(5 * scale, 5 * scale, 190 * scale, 290 * scale);
 
-  // Text
+  // Text (Japanese localized)
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
-  ctx.font = 'bold 18px Arial';
-  ctx.fillText(name, 100, 30);
-  ctx.font = 'bold 24px Arial';
-  ctx.fillText(power, 100, 230);
-  ctx.font = 'bold 16px Arial';
+  ctx.font = `bold ${18 * scale}px Arial`;
+  ctx.fillText(name, 100 * scale, 30 * scale);
+
+  ctx.font = `bold ${24 * scale}px Arial`;
+  ctx.fillText(power, 100 * scale, 230 * scale);
+
+  ctx.font = `bold ${16 * scale}px Arial`;
   ctx.fillStyle = '#00aaff';
-  ctx.fillText(`コスト: ${cost}`, 100, 255);
-  ctx.font = '12px Arial';
+  ctx.fillText(`コスト: ${cost}`, 100 * scale, 255 * scale);
+
+  ctx.font = `${12 * scale}px Arial`;
   ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
 
   const elementJP = { fire: '火', water: '水', wood: '木', none: '無' }[element] || '無';
   const effectJP = { attack: '攻撃', heal: '回復', defense: '防御', energy_gain: 'エネ獲得', status_clear: '状態浄化', stun_only: 'スタン付与', poison_only: '毒付与' }[effect] || effect;
-  ctx.fillText(`${elementJP}属性 / ${effectJP}`, 100, 270);
+  ctx.fillText(`${elementJP}属性 / ${effectJP}`, 100 * scale, 270 * scale);
 
   // Flavor Text
   const flavor = document.getElementById('card-flavor')?.value || '';
   if (flavor) {
-    ctx.font = 'italic 10px Arial';
+    ctx.font = `italic ${10 * scale}px Arial`;
     ctx.fillStyle = '#aaa';
-    ctx.fillText(flavor.substring(0, 20), 100, 195);
+    ctx.fillText(flavor.substring(0, 20), 100 * scale, 195 * scale);
     if (flavor.length > 20) {
-      ctx.fillText(flavor.substring(20, 40), 100, 207);
+      ctx.fillText(flavor.substring(20, 40), 100 * scale, 207 * scale);
     }
   }
 
   // Preview Role
   const role = document.getElementById('summon-role')?.value || 'attacker';
   const roleMap = { attacker: '🗡️ アタッカー', guardian: '🛡️ ガーディアン', energy: '🔋 エネ供給' };
-  ctx.font = 'bold 12px Arial';
+  ctx.font = `bold ${12 * scale}px Arial`;
   ctx.fillStyle = '#ffea00';
-  ctx.fillText(roleMap[role], 100, 285);
+  ctx.fillText(roleMap[role], 100 * scale, 285 * scale);
 
   // Preview Skills
   const skills = [];
@@ -871,9 +890,9 @@ window.updatePreview = () => {
   if (document.getElementById('skill-twin')?.checked) skills.push('二連撃');
 
   if (skills.length > 0) {
-    ctx.font = '10px Arial';
+    ctx.font = `${10 * scale}px Arial`;
     ctx.fillStyle = '#aaa';
-    ctx.fillText(skills.join(' / '), 100, 292);
+    ctx.fillText(skills.join(' / '), 100 * scale, 292 * scale);
   }
 };
 
