@@ -1101,7 +1101,7 @@ window.renderGallery = () => {
       
       <div class="gallery-grid">
         ${myCards.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">まだカードを作成していません</p>' : ''}
-        ${myCards.map(card => `
+        ${myCards.map((card, idx) => `
           <div class="gallery-item glass">
             ${card.image ? `<img src="${card.image}" class="gallery-card-img">` : '<div class="no-img-placeholder">No Image</div>'}
             <div class="gallery-card-info">
@@ -1113,10 +1113,11 @@ window.renderGallery = () => {
               <div class="gallery-card-skills">
                 ${(card.skills || []).map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
               </div>
-              <div class="gallery-card-meta">${card.element !== 'none' ? card.element.toUpperCase() : 'NONE'} | ${card.effectId.toUpperCase()}</div>
+              <div class="gallery-card-meta">${card.element !== 'none' ? card.element.toUpperCase() : 'NONE'} | ${(card.effectId || '').toUpperCase()}</div>
               
               <div style="margin-top: 10px;">
-                <button class="secondary" style="width: 100%; font-size: 0.8rem; padding: 5px;" onclick="downloadCardImage('${card.image}', '${card.name}')" ${!card.image ? 'disabled' : ''}>📥 画像を保存</button>
+                <button class="secondary btn-dl-card" style="width: 100%; font-size: 0.8rem; padding: 5px;" 
+                  data-idx="${idx}" ${!card.image ? 'disabled' : ''}>📥 画像を保存</button>
               </div>
             </div>
           </div>
@@ -1129,6 +1130,17 @@ window.renderGallery = () => {
     </div>
   `;
   showView('gallery', html);
+
+  // Use event delegation or specific listeners to avoid string escaping nightmare
+  document.querySelectorAll('.btn-dl-card').forEach(btn => {
+    btn.onclick = (e) => {
+      const idx = e.target.getAttribute('data-idx');
+      const card = myCards[idx];
+      if (card && card.image) {
+        downloadCardImage(card.image, card.name);
+      }
+    };
+  });
 };
 
 setupTitleEvents();
