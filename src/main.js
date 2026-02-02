@@ -789,9 +789,28 @@ window.updatePreview = () => {
   }
   ctx.fillRect(0, 0, 200, 300);
 
-  // Image
+  // Image (Prevent stretching using "cover" logic)
   if (loadedImage) {
-    ctx.drawImage(loadedImage, 10, 40, 180, 150);
+    const targetW = 180;
+    const targetH = 150;
+    const targetRatio = targetW / targetH;
+    const imgRatio = loadedImage.width / loadedImage.height;
+
+    let sX, sY, sW, sH;
+    if (imgRatio > targetRatio) {
+      // Image is wider than target area
+      sH = loadedImage.height;
+      sW = sH * targetRatio;
+      sX = (loadedImage.width - sW) / 2;
+      sY = 0;
+    } else {
+      // Image is taller than target area
+      sW = loadedImage.width;
+      sH = sW / targetRatio;
+      sX = 0;
+      sY = (loadedImage.height - sH) / 2;
+    }
+    ctx.drawImage(loadedImage, sX, sY, sW, sH, 10, 40, targetW, targetH);
   } else {
     ctx.fillStyle = '#333';
     ctx.fillRect(10, 40, 180, 150);
