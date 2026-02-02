@@ -54,7 +54,7 @@ window.goToHome = (confirmRequired = false) => {
     return;
   }
   if (currentRoomId) {
-    socket.emit('leave_room', currentRoomId);
+    socket.emit('leave_room', { roomId: currentRoomId });
   }
   currentRoomId = null;
   localUsedTypes = [];
@@ -1082,13 +1082,22 @@ window.playCardWithObjID_UNIT_CLICK = () => {
   }
 };
 
+window.downloadCardImage = (imageData, fileName) => {
+  const link = document.createElement('a');
+  link.href = imageData;
+  link.download = `${fileName}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 window.renderGallery = () => {
   const myCards = JSON.parse(localStorage.getItem('my_cards') || '[]');
 
   const html = `
     <div class="gallery-container">
       <h2>カード図鑑（作成済みカード）</h2>
-      <p style="color: #aaa; margin-bottom: 20px;">あなたが作成したオリジナルカードの一覧です。</p>
+      <p style="color: #aaa; margin-bottom: 20px;">あなたが作成したオリジナルカードの一覧です。保存ボタンから画像をダウンロードできます。</p>
       
       <div class="gallery-grid">
         ${myCards.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">まだカードを作成していません</p>' : ''}
@@ -1105,6 +1114,10 @@ window.renderGallery = () => {
                 ${(card.skills || []).map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
               </div>
               <div class="gallery-card-meta">${card.element !== 'none' ? card.element.toUpperCase() : 'NONE'} | ${card.effectId.toUpperCase()}</div>
+              
+              <div style="margin-top: 10px;">
+                <button class="secondary" style="width: 100%; font-size: 0.8rem; padding: 5px;" onclick="downloadCardImage('${card.image}', '${card.name}')" ${!card.image ? 'disabled' : ''}>📥 画像を保存</button>
+              </div>
             </div>
           </div>
         `).join('')}
