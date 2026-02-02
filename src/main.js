@@ -275,6 +275,16 @@ window.endTurn = () => {
 
   console.log(`[ACTION] End turn. Room: ${currentRoomId}. MyID: ${socket.id}`);
   socket.emit('end_turn', { roomId: currentRoomId });
+
+  // [NEW] Fail-safe: Enable UI after 5 seconds if no response
+  setTimeout(() => {
+    if (isActing) {
+      console.warn("[FAIL-SAFE] endTurn timeout. Resetting isActing.");
+      isActing = false;
+      const buttons = document.querySelectorAll('.card-btn, .summon-btn');
+      buttons.forEach(btn => btn.disabled = false);
+    }
+  }, 5000);
 };
 
 socket.on('game_over', (data) => {
@@ -1132,6 +1142,15 @@ window.playCardWithObjID = (cardId, actionType = 'use') => {
   window.lastTargetType = 'player';
 
   // isActing is reset in action_performed or error_message
+  // [NEW] Fail-safe: Enable UI after 5 seconds if no response
+  setTimeout(() => {
+    if (isActing) {
+      console.warn("[FAIL-SAFE] playCard timeout. Resetting isActing.");
+      isActing = false;
+      const buttons = document.querySelectorAll('.card-btn, .summon-btn');
+      buttons.forEach(btn => btn.disabled = false);
+    }
+  }, 5000);
 };
 
 window.playCardWithObjID_UNIT_CLICK = () => {
