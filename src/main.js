@@ -466,6 +466,10 @@ function renderCardCreator() {
             <input type="number" id="card-cost" value="2" min="1" max="10" oninput="updatePreview()">
             <small>※未入力時はパワーに応じて自動計算されます</small>
           </div>
+          <div class="input-group">
+             <label>フレーバーテキスト (説明文)</label>
+             <input type="text" id="card-flavor" placeholder="伝説の始まり..." maxlength="40" oninput="updatePreview()">
+          </div>
           <div class="input-group" style="align-items:flex-start">
              <label>スキル追加 (1つまで)</label>
              <div class="skill-selector">
@@ -813,25 +817,39 @@ window.updatePreview = () => {
   ctx.fillText(power, 100, 230);
   ctx.font = 'bold 16px Arial';
   ctx.fillStyle = '#00aaff';
-  ctx.fillText(`COST: ${cost}`, 100, 255);
+  ctx.fillText(`コスト: ${cost}`, 100, 255);
   ctx.font = '12px Arial';
   ctx.fillStyle = element === 'fire' ? '#ff4444' : (element === 'water' ? '#4444ff' : (element === 'wood' ? '#44ff44' : '#fff'));
-  ctx.fillText(`${element.toUpperCase()} ${effect.replace(/_/g, ' ').toUpperCase()}`, 100, 270);
+
+  const elementJP = { fire: '火', water: '水', wood: '木', none: '無' }[element] || '無';
+  const effectJP = { attack: '攻撃', heal: '回復', defense: '防御', energy_gain: 'エネ獲得', status_clear: '状態浄化', stun_only: 'スタン付与', poison_only: '毒付与' }[effect] || effect;
+  ctx.fillText(`${elementJP}属性 / ${effectJP}`, 100, 270);
+
+  // Flavor Text
+  const flavor = document.getElementById('card-flavor')?.value || '';
+  if (flavor) {
+    ctx.font = 'italic 10px Arial';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(flavor.substring(0, 20), 100, 195);
+    if (flavor.length > 20) {
+      ctx.fillText(flavor.substring(20, 40), 100, 207);
+    }
+  }
 
   // Preview Role
   const role = document.getElementById('summon-role')?.value || 'attacker';
-  const roleMap = { attacker: '🗡️ ATTACKER', guardian: '🛡️ GUARDIAN', energy: '🔋 ENERGY' };
+  const roleMap = { attacker: '🗡️ アタッカー', guardian: '🛡️ ガーディアン', energy: '🔋 エネ供給' };
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = '#ffea00';
   ctx.fillText(roleMap[role], 100, 285);
 
   // Preview Skills
   const skills = [];
-  if (document.getElementById('skill-vampire')?.checked) skills.push('Vampire');
-  if (document.getElementById('skill-piercing')?.checked) skills.push('Piercing');
-  if (document.getElementById('skill-poison')?.checked) skills.push('Poison');
-  if (document.getElementById('skill-stun')?.checked) skills.push('Stun');
-  if (document.getElementById('skill-twin')?.checked) skills.push('Twin');
+  if (document.getElementById('skill-vampire')?.checked) skills.push('吸血');
+  if (document.getElementById('skill-piercing')?.checked) skills.push('貫通');
+  if (document.getElementById('skill-poison')?.checked) skills.push('毒付与');
+  if (document.getElementById('skill-stun')?.checked) skills.push('スタン付与');
+  if (document.getElementById('skill-twin')?.checked) skills.push('二連撃');
 
   if (skills.length > 0) {
     ctx.font = '10px Arial';
@@ -885,6 +903,7 @@ window.saveCustomCard = () => {
     id: 'c' + Date.now(),
     name, power, effectId: effect, element, cost, frame, vfx,
     skills,
+    flavor: document.getElementById('card-flavor')?.value || "",
     isSpecial: isSpecial,
     summonRole: document.getElementById('summon-role').value,
     isCustom: true,
@@ -1119,6 +1138,10 @@ window.renderGallery = () => {
     const element = (card.element || 'none').toLowerCase();
     const skills = Array.isArray(card.skills) ? card.skills : [];
     const image = card.image || '';
+    const flavor = card.flavor || '';
+
+    const elementJP = { fire: '火', water: '水', wood: '木', none: '無' }[element] || '無';
+    const effectJP = { attack: '攻撃', heal: '回復', defense: '防御', energy_gain: 'エネ獲得', status_clear: '状態浄化', stun_only: 'スタン付与', poison_only: '毒付与' }[effectId] || effectId;
 
     return `
             <div class="gallery-item glass">
@@ -1129,10 +1152,14 @@ window.renderGallery = () => {
                   <span class="stat-power">${effectId === 'attack' ? '⚔️' : effectId === 'heal' ? '❤️' : '🛡️'} ${power}</span>
                   <span class="stat-cost">🔋 ${cost}</span>
                 </div>
+                ${flavor ? `<div style="font-size: 0.75rem; font-style: italic; color: #888; margin-bottom: 8px;">"${flavor}"</div>` : ''}
                 <div class="gallery-card-skills">
-                  ${skills.map(s => `<span class="gallery-skill-tag">${s}</span>`).join('')}
+                  ${skills.map(s => {
+      const skillJP = { vampire: '吸血', piercing: '貫通', poison: '毒付与', stun: 'スタン付与', twinStrike: '二連撃' }[s] || s;
+      return `<span class="gallery-skill-tag">${skillJP}</span>`;
+    }).join('')}
                 </div>
-                <div class="gallery-card-meta">${element.toUpperCase()} | ${effectId.toUpperCase()}</div>
+                <div class="gallery-card-meta">${elementJP}属性 | ${effectJP}</div>
                 
                 <div style="margin-top: 10px;">
                   <button class="secondary btn-dl-card" style="width: 100%; font-size: 0.8rem; padding: 5px;" 
