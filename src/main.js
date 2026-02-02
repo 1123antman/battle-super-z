@@ -1143,4 +1143,9 @@ window.renderGallery = () => {
   });
 };
 
-setupTitleEvents();
+// Ensure title events are set up even if the module loads before the DOM is fully ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupTitleEvents);
+} else {
+  setupTitleEvents();
+}
