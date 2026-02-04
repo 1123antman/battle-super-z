@@ -333,8 +333,9 @@ option {
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    height: 140px;
-    /* Fixed height for hand */
+    min-height: 120px;
+    max-height: 180px;
+    height: auto;
 }
 
 .hand-area::-webkit-scrollbar {
@@ -942,4 +943,95 @@ option {
 .rarity-legendary .gallery-card-name {
     color: #ffaa00;
     text-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
+}
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .battle-container {
+        gap: 2px;
+        padding: 3px;
+    }
+
+    .turn-indicator {
+        font-size: 0.9rem;
+        padding: 4px;
+    }
+
+    .opponents-row {
+        gap: 4px;
+        padding: 2px;
+    }
+
+    .player-card {
+        width: 110px;
+        padding: 3px;
+        font-size: 0.65rem;
+    }
+
+    .center-battle-ui {
+        min-height: 60px;
+        margin: 1px 0;
+    }
+
+    .log-area {
+        padding: 4px;
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+
+    .my-area {
+        gap: 2px;
+    }
+
+    .hand-area {
+        gap: 4px;
+        padding: 2px;
+        min-height: 90px;
+        max-height: 140px;
+    }
+
+    .card-btn {
+        width: 70px;
+        height: 100px;
+        padding: 3px;
+    }
+
+    .card-btn img {
+        height: 30px;
+    }
+
+    .card-name-label {
+        font-size: 0.65rem;
+    }
+
+    .card-power-label {
+        font-size: 1rem;
+    }
+
+    .summon-field {
+        min-height: 50px;
+        padding: 3px;
+        margin: 2px 0;
+    }
+
+    .summoned-unit {
+        width: 80px;
+        padding: 3px;
+    }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+    .hand-area {
+        min-height: 80px;
+        max-height: 120px;
+    }
+
+    .card-btn {
+        width: 60px;
+        height: 85px;
+    }
+
+    .card-btn img {
+        height: 25px;
+    }
 }
