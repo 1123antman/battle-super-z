@@ -196,6 +196,7 @@ window.renderRules = () => {
           <li><strong>初期エネルギー</strong>: 3 / <strong>最大</strong>: 10</li>
           <li><strong>回復</strong>: 毎ターン開始時にエネルギーが <span class="highlight">2</span> 回復します。</li>
           <li><strong>基本アクション</strong>: 「攻撃・シールド・回復」はコスト <span class="highlight">2</span> で、デッキに関わらず常に使用可能です。</li>
+          <li><span class="danger">⚠️ 基本行動制限</span>: 基本アクション(攻撃・シールド・回復)は<span class="highlight">1ターンに1回のみ</span>使用できます。</li>
         </ul>
       </section>
 
@@ -203,7 +204,7 @@ window.renderRules = () => {
         <h2>2. デッキ編成のルール</h2>
         <ul>
           <li>デッキは<span class="highlight">最大15枚</span>のカードで構成されます。</li>
-          <li>同じカード（IDが同じもの）はデッキに<span class="highlight">1枚</span>しか入れられません。</li>
+          <li>同じカード(IDが同じもの)はデッキに<span class="highlight">1枚</span>しか入れられません。</li>
           <li><span class="danger">手札枯渇ペナルティ</span>: デッキのカードをすべて使い切ると、毎ターン終了時に <span class="danger">5 HP</span> のダメージを受けます。</li>
         </ul>
       </section>
@@ -211,7 +212,7 @@ window.renderRules = () => {
       <section>
         <h2>3. 属性相性 (Element)</h2>
         <div class="affinity-diagram">
-          <p>特定の属性で攻撃すると、ダメージが変化します：</p>
+          <p>特定の属性で攻撃すると、ダメージが変化します:</p>
           <ul class="no-bullets">
             <li>🔥 <strong>火</strong> は 🌲 <strong>木</strong> に強い (<span class="highlight">1.5倍</span>)</li>
             <li>🌲 <strong>木</strong> は 💧 <strong>水</strong> に強い (<span class="highlight">1.5倍</span>)</li>
@@ -234,11 +235,12 @@ window.renderRules = () => {
 
       <section>
         <h2>5. 召喚ユニットとロール</h2>
-        <p>攻撃カードを「召喚」すると、場にユニットを配置できます：</p>
+        <p>攻撃カードを「召喚」すると、場にユニットを配置できます:</p>
         <ul>
-          <li><strong>アタッカー</strong>: 標準的なユニットです。</li>
-          <li><strong>ガーディアン</strong>: プレイヤーの身代わりとなり、相手の攻撃を優先的に受けます。</li>
-          <li><strong>エネルギー供給</strong>: 毎ターンのエネルギー回復量が <span class="highlight">+1</span> されます。</li>
+          <li><strong>⚔️ アタッカー</strong>: 攻撃を受けた際、生き残れば<span class="highlight">反撃</span>します。反撃ダメージは攻撃前の威力と同じです。</li>
+          <li><strong>🛡️ ガーディアン</strong>: プレイヤーの身代わりとなり、相手の攻撃を優先的に受けます。</li>
+          <li><strong>🔋 エネルギー供給</strong>: 毎ターンのエネルギー回復量が <span class="highlight">+1</span> されます。</li>
+          <li><span class="danger">⚠️ ユニット迎撃</span>: すべてのユニットは自動的に攻撃を受け止めます(明示的にプレイヤーを狙わない限り)。</li>
           <li><strong>自然減衰</strong>: ユニットは持ち主のターン終了時に威力が <span class="danger">2</span> 減少します。0になると消滅します。</li>
         </ul>
       </section>
@@ -443,8 +445,8 @@ socket.on('error_message', (msg) => {
 function updateLogs() {
   const logDiv = document.getElementById('battle-log');
   if (logDiv) {
-    // Keep only the last 20 logs for mobile performance
-    const displayLogs = battleLogs.slice(-20);
+    // Keep only the last 15 logs for space
+    const displayLogs = battleLogs.slice(-15);
     logDiv.innerHTML = displayLogs.map(l => `<div>${l}</div>`).join('');
     logDiv.scrollTop = logDiv.scrollHeight;
   }
@@ -700,7 +702,19 @@ const ALL_PRESET_CARDS = [
   // None - Versatile with mixed skills
   { id: 'p22', name: "連撃", effectId: "attack", power: 8, element: "none", cost: 1, skills: ['twinStrike'] },
   { id: 'p23', name: "突撃", effectId: "attack", power: 12, element: "none", cost: 2, skills: [] },
-  { id: 'p24', name: "救急キット", effectId: "heal", power: 10, element: "none", cost: 2, skills: [] }
+  { id: 'p24', name: "救急キット", effectId: "heal", power: 10, element: "none", cost: 2, skills: [] },
+
+  // New Presets
+  { id: 'p25', name: "狂戦士の咆哮", effectId: "attack", power: 15, element: "fire", cost: 4, skills: ['vampire'] },
+  { id: 'p26', name: "魔力の壁", effectId: "defense", power: 18, element: "none", cost: 4, skills: [] },
+  { id: 'p27', name: "雷電", effectId: "attack", power: 12, element: "fire", cost: 3, skills: ['stun'] },
+  { id: 'p28', name: "癒しの泉", effectId: "heal", power: 20, element: "water", cost: 5, skills: [] },
+  { id: 'p29', name: "暗狂の刃", effectId: "attack", power: 14, element: "none", cost: 3, skills: ['piercing'] },
+  { id: 'p30', name: "石化の呪い", effectId: "attack", power: 5, element: "wood", cost: 2, skills: ['stun'] },
+  { id: 'p31', name: "フェニックスの羽", effectId: "heal", power: 15, element: "fire", cost: 4, skills: ['status_clear'] },
+  { id: 'p32', name: "龍の息吹", effectId: "attack", power: 20, element: "fire", cost: 6, skills: ['twinStrike'] },
+  { id: 'p33', name: "大地の怒り", effectId: "attack", power: 16, element: "wood", cost: 4, skills: ['piercing'] },
+  { id: 'p34', name: "聖水の恵み", effectId: "heal", power: 12, element: "water", cost: 3, skills: ['status_clear'] }
 ];
 
 // --- Card Management ---
@@ -1085,18 +1099,45 @@ function renderBattle(gameState) {
   const hand = [...baseCards, ...deckCards];
 
   const checkDisabled = (card) => {
-    // 基本カード (base_) は何度でも使える
+    // 基本カード (base_) は何度でも使えるが、1ターン1回の制限あり
     if (card.id.startsWith('base_')) {
-      return !isMyTurn || (myPlayer.energy < card.cost);
+      return !isMyTurn || myPlayer.energy < card.cost || myPlayer.usedBasicAction;
     }
 
-    // デッキ内のカードは一度使うとバトル終了まで使えない (usedCardIds に含まれる場合)
+    // デッキ内のカードは一度使うとバトル終了まで使えない
     const alreadyUsed = myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id);
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
     return !isMyTurn || alreadyUsed || (myPlayer.energy < cost);
   };
 
-  const sortedHand = [...hand];
+  // Sort and Filter Hand
+  // Categories: Basics, Summon Units (Attacker, Guardian, Energy), Heal, Special, Others
+  const getCategoryScore = (card) => {
+    if (card.id.startsWith('base_')) return 0; // Basics at the beginning (Left)
+    if (card.effectId === 'attack' && !card.isSpecial) return 10; // Summonable
+    if (card.effectId === 'heal') return 20;
+    if (card.isSpecial) return 30;
+    return 40;
+  };
+
+  const sortedHand = hand
+    .filter(card => {
+      // Hide used non-basic cards
+      if (!card.id.startsWith('base_')) {
+        return !(myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id));
+      }
+      return true;
+    })
+    .sort((a, b) => getCategoryScore(a) - getCategoryScore(b));
+
+  const getCardCategoryClass = (card) => {
+    if (card.effectId === 'attack' && !card.id.startsWith('base_') && !card.isSpecial) return 'card-summon';
+    if (card.effectId === 'attack') return 'card-attack';
+    if (card.effectId === 'heal') return 'card-heal';
+    if (card.effectId === 'defense') return 'card-defense';
+    if (card.isSpecial) return 'card-special';
+    return '';
+  };
 
   const html = `
     <div class="battle-container">
@@ -1167,7 +1208,7 @@ function renderBattle(gameState) {
     const alreadyUsed = myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id);
 
     return `
-      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''}" onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
+      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''} ${getCardCategoryClass(card)}" onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
         <div class="card-cost">${cost}</div>
         ${card.image ? `<img src="${card.image}">` : ''}
         <div class="card-name-label">${card.name}</div>
@@ -1195,8 +1236,12 @@ function renderBattle(gameState) {
       </div>
     </div>`;
 
-  showView('battle', html);
-  updateLogs();
+  try {
+    showView('battle', html);
+    updateLogs();
+  } catch (e) {
+    console.error("Render Error:", e);
+  }
 }
 
 // [NEW] Debounced render for mobile stability

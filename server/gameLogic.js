@@ -22,6 +22,7 @@ class GameLogic {
                     summonedCard: null
                 },
                 usedCardIds: [], // [NEW] Track used deck cards
+                usedBasicAction: false, // [NEW] Track if basic action was used this turn
                 deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] ?? 15) : 15
             };
         });
@@ -61,6 +62,11 @@ class GameLogic {
             if (actor.usedCardIds && actor.usedCardIds.includes(cardData.id)) {
                 return { error: 'このカードはこのバトルで既に使用されています' };
             }
+        } else {
+            // [NEW] Check basic action limit
+            if (actor.usedBasicAction) {
+                return { error: '基本行動（攻撃・シールド・回復）は1ターンに1回までです' };
+            }
         }
 
         // Basic Effect Logic
@@ -78,11 +84,17 @@ class GameLogic {
 
         // Mitigation check
         if (initialTarget && initialTarget.hp !== undefined && cardData.effectId === 'attack') {
+            // If user explicitly targets a unit, attack that unit
             if (cardData.targetType === 'unit' && initialTarget.field && initialTarget.field.summonedCard) {
                 targets = [{ type: 'unit', ownerId: initialTarget.id, unit: initialTarget.field.summonedCard }];
-            } else if (initialTarget.field && initialTarget.field.summonedCard && initialTarget.field.summonedCard.role === 'guardian') {
+            }
+            // Otherwise, if target has ANY summoned unit, it automatically intercepts
+            else if (initialTarget.field && initialTarget.field.summonedCard) {
                 targets = [{ type: 'unit', ownerId: initialTarget.id, unit: initialTarget.field.summonedCard }];
-            } else {
+                resultLog.push(`🛡️ ${initialTarget.field.summonedCard.name} が攻撃を受け止めた！`);
+            }
+            // No unit, attack player directly
+            else {
                 targets = [initialTarget];
             }
         } else if (initialTarget) {
@@ -148,12 +160,43 @@ class GameLogic {
                             const ownerName = owner.playerName || owner.id.slice(0, 4);
                             resultLog.push(`【攻撃】${actorName} が ${ownerName} の召喚ユニット「${unit.name}」を攻撃！`);
 
+                            // [NEW] Counter-attack logic: Capture power BEFORE damage
+                            const preAttackPower = unit.power;
+
                             unit.power -= damage;
                             if (unit.power <= 0) {
                                 resultLog.push(`💥 威力 ${damage} により、${unit.name} は破壊された！`);
                                 owner.field.summonedCard = null;
                             } else {
                                 resultLog.push(`🛡️ ${unit.name} は耐えたが、残存威力は ${unit.power} に減少した。`);
+
+                                // [DEBUG] Log unit role for debugging
+                                console.log(`[COUNTER-ATTACK CHECK] Unit: ${unit.name}, Role: ${unit.role}, Power before attack: ${preAttackPower}`);
+
+                                // Attacker units counter-attack when they survive
+                                const role = (unit.role || 'attacker').toLowerCase(); // Default to attacker if undefined
+                                console.log(`[COUNTER-ATTACK CHECK] Normalized role: ${role}`);
+
+                                if (role === 'attacker') {
+                                    const counterDamage = Math.max(0, preAttackPower);
+                                    console.log(`[COUNTER-ATTACK] Triggering counter-attack with damage: ${counterDamage}`);
+
+                                    // Target priority for counter-attack: Attacker's unit > Attacker player
+                                    if (actor.field && actor.field.summonedCard) {
+                                        const actorUnit = actor.field.summonedCard;
+                                        actorUnit.power -= counterDamage;
+                                        resultLog.push(`⚔️ ${unit.name} の反撃！ ${actorName} のユニット「${actorUnit.name}」に ${counterDamage} ダメージ！`);
+                                        if (actorUnit.power <= 0) {
+                                            resultLog.push(`💥 ${actorUnit.name} は反撃により破壊された！`);
+                                            actor.field.summonedCard = null;
+                                        }
+                                    } else {
+                                        actor.hp = Math.max(0, actor.hp - counterDamage);
+                                        resultLog.push(`⚔️ ${unit.name} の反撃！ ${actorName} は ${counterDamage} ダメージ受けた。 (残りHP: ${actor.hp})`);
+                                    }
+                                } else {
+                                    console.log(`[COUNTER-ATTACK] Skipped - unit role is not attacker`);
+                                }
                             }
                             // Units don't receive status effects, but Vampire can still heal attacker?
                             // Let's allow Vampire when hitting unit
@@ -257,6 +300,9 @@ class GameLogic {
         if (!isBasic) {
             if (!actor.usedCardIds) actor.usedCardIds = [];
             actor.usedCardIds.push(cardData.id);
+        } else {
+            // [NEW] Track basic action usage
+            actor.usedBasicAction = true;
         }
 
         return {
@@ -321,6 +367,8 @@ class GameLogic {
                 resultLogs.push(`🔋 ${nextActor.field.summonedCard.name} によりエネルギー充填！ (+1)`);
             }
             nextActor.energy = Math.min(nextActor.maxEnergy, nextActor.energy + recovery);
+            // [NEW] Reset basic action flag for the next player
+            nextActor.usedBasicAction = false;
         }
 
         return {

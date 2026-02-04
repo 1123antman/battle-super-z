@@ -164,10 +164,12 @@ option {
 .battle-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     height: 100vh;
     padding: 10px;
     box-sizing: border-box;
+    overflow: hidden;
+    /* Prevent scrolling */
 }
 
 .turn-indicator {
@@ -201,22 +203,21 @@ option {
 .opponents-row {
     display: flex;
     justify-content: center;
-    gap: 15px;
-    padding: 10px;
+    gap: 8px;
+    padding: 2px;
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
+    border-radius: 6px;
     flex-shrink: 0;
-    flex-wrap: wrap;
-    /* Added for overflow safety */
 }
 
 .player-card {
-    width: 180px;
-    padding: 10px;
+    width: 130px;
+    padding: 4px;
     background: #111;
     border: 1px solid #444;
     border-radius: 6px;
     text-align: center;
+    font-size: 0.75rem;
 }
 
 .player-card.self {
@@ -257,32 +258,34 @@ option {
 }
 
 .center-battle-ui {
-    flex-grow: 1;
+    flex: 1;
+    /* Grow and shrink */
     display: flex;
     flex-direction: column;
-    min-height: 200px;
-    margin: 10px 0;
+    min-height: 100px;
+    /* Smaller min-height */
+    margin: 2px 0;
     overflow: hidden;
 }
 
 .my-area {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     flex-shrink: 0;
 }
 
 .log-area {
-    flex-grow: 1;
-    padding: 15px;
+    flex: 1;
+    padding: 10px;
     overflow-y: auto;
-    font-family: 'Inter', sans-serif;
-    font-size: 1.05rem;
-    line-height: 1.5;
+    font-size: 0.9rem;
+    /* Smaller font */
+    line-height: 1.3;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .log-entry {
@@ -321,15 +324,17 @@ option {
 /* Cards & Hand */
 .hand-area {
     display: flex;
-    gap: 12px;
-    justify-content: flex-start;
+    gap: 8px;
+    justify-content: center;
     perspective: 1000px;
-    padding: 20px 10px;
+    padding: 5px;
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
+    height: 140px;
+    /* Fixed height for hand */
 }
 
 .hand-area::-webkit-scrollbar {
@@ -342,18 +347,18 @@ option {
 }
 
 .card-btn {
-    width: 110px;
-    height: 160px;
+    width: 80px;
+    height: 115px;
     background: rgba(20, 20, 30, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    border-radius: 6px;
     position: relative;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    padding: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     flex-shrink: 0;
 }
 
@@ -366,10 +371,10 @@ option {
 
 .card-btn img {
     width: 100%;
-    height: 60px;
+    height: 35px;
     object-fit: cover;
-    border-radius: 6px;
-    margin-bottom: 5px;
+    border-radius: 3px;
+    margin-bottom: 2px;
 }
 
 .card-name-label {
@@ -421,6 +426,32 @@ option {
     background: white;
     color: var(--secondary-color);
     transform: translateX(-50%) translateY(-2px);
+}
+
+/* Category Colors */
+.card-attack {
+    border-color: #ff4444 !important;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.2);
+}
+
+.card-heal {
+    border-color: #44ff44 !important;
+    box-shadow: 0 0 10px rgba(68, 255, 68, 0.2);
+}
+
+.card-defense {
+    border-color: #4444ff !important;
+    box-shadow: 0 0 10px rgba(68, 68, 255, 0.2);
+}
+
+.card-special {
+    border-color: #ff00e6 !important;
+    box-shadow: 0 0 10px rgba(255, 0, 230, 0.2);
+}
+
+.card-summon {
+    border-color: #ffea00 !important;
+    box-shadow: 0 0 15px rgba(255, 234, 0, 0.3);
 }
 
 /* Attributes & VFX */
@@ -716,51 +747,56 @@ option {
 
 /* --- Battle Summon Field & Units --- */
 .summon-field {
-    margin: 10px 0;
-    padding: 10px;
+    margin: 4px 0;
+    padding: 4px;
     background: rgba(255, 255, 255, 0.03);
-    border: 1px dashed rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    min-height: 90px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    min-height: 60px;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
 }
 
 .summoned-unit {
-    width: 110px;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     text-align: center;
     position: relative;
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
     backdrop-filter: blur(5px);
+    animation: summonAppear 0.4s ease-out;
 }
 
-.unit-img {
-    width: 100%;
-    height: 65px;
-    object-fit: cover;
-    border-radius: 4px;
+@keyframes summonAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.5) rotate(-10deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) rotate(0);
+    }
 }
 
-.unit-info {
-    font-size: 0.7rem;
-    color: #eee;
-    margin-top: 4px;
+.summoned-unit.role-attacker {
+    border-color: #ff4444 !important;
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
 }
 
 .role-guardian {
-    border: 2px solid #00a2ff !important;
-    box-shadow: 0 0 10px rgba(0, 162, 255, 0.4);
+    border-color: #00a2ff !important;
+    box-shadow: 0 0 15px rgba(0, 162, 255, 0.5);
 }
 
 .role-energy {
-    border: 2px solid #ffea00 !important;
-    box-shadow: 0 0 10px rgba(255, 234, 0, 0.4);
+    border-color: #ffea00 !important;
+    box-shadow: 0 0 15px rgba(255, 234, 0, 0.5);
 }
 
 .opponent-unit:hover {
