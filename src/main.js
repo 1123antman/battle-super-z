@@ -83,10 +83,15 @@ window.showView = function (viewName, contentHTML = '') {
 }
 
 window.sendChat = (msg) => {
-  if (!currentRoomId) return;
+  console.log(`[DEBUG] sendChat called: ${msg}, RoomID: ${currentRoomId}`);
+  if (!currentRoomId) {
+    console.error("[ERROR] No currentRoomId in sendChat!");
+    return;
+  }
 
   // Local echo
   const myName = document.querySelector('.player-card.self .player-name')?.innerText || '自分';
+  console.log(`[DEBUG] Adding local echo for ${myName}`);
   battleLogs.push(`<div class="log-entry">💬 <strong>${myName}</strong>: ${msg}</div>`);
   updateLogs();
 
