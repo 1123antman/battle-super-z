@@ -1281,7 +1281,7 @@ function renderBattle(gameState) {
     `;
   }).join('')}
         </div>
-        <div style="text-align: center; margin-top: 10px;">
+        <div style="text-align: center; margin-top: 2px;">
           <button class="primary" onclick="${!isMyTurn ? '' : 'endTurn()'}" ${!isMyTurn ? 'disabled' : ''}>ターン終了</button>
         </div>
       </div>

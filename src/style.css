@@ -37,6 +37,16 @@ body {
     max-width: 1400px;
     min-height: 100vh;
     position: relative;
+    padding: 0;
+    /* Removed global padding to prevent overflow in battle */
+}
+
+/* Add padding back for non-battle screens if needed, or handle per screen */
+#title-screen,
+.creator-container,
+.deck-editor-container,
+.gallery-container,
+.rules-container {
     padding: 20px;
 }
 
@@ -164,14 +174,22 @@ option {
 .battle-container {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
+    /* Reduced gap */
     height: 100vh;
     max-height: 100vh;
-    /* Strictly limit height */
-    padding: 2px 5px;
-    /* Reduced vertical padding */
+    padding: 0 5px;
+    /* Removed vertical padding entirely */
     box-sizing: border-box;
     overflow: hidden;
+    margin: 0;
+}
+
+#battle-screen {
+    height: 100vh;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
 }
 
 .turn-indicator {
@@ -332,8 +350,8 @@ option {
 .my-area {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    /* Reduced gap */
+    gap: 1px;
+    /* Minimal gap */
     flex-shrink: 0;
 }
 
