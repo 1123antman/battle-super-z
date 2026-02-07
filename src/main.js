@@ -83,6 +83,13 @@ window.showView = function (viewName, contentHTML = '') {
 }
 
 window.sendChat = (msg) => {
+  if (!currentRoomId) return;
+
+  // Local echo
+  const myName = document.querySelector('.player-card.self .player-name')?.innerText || '自分';
+  battleLogs.push(`<div class="log-entry">💬 <strong>${myName}</strong>: ${msg}</div>`);
+  updateLogs();
+
   socket.emit('chat_message', { roomId: currentRoomId, msg });
 };
 
