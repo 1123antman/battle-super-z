@@ -413,8 +413,8 @@ option {
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    height: 150px;
-    /* Increased height */
+    height: 180px;
+    /* Increased height again */
 }
 
 .hand-area::-webkit-scrollbar {
@@ -427,9 +427,9 @@ option {
 }
 
 .card-btn {
-    width: 85px;
+    width: 100px;
     /* Increased width */
-    height: 120px;
+    height: 145px;
     /* Increased height */
     background: rgba(20, 20, 30, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.1);
