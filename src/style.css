@@ -403,17 +403,17 @@ option {
 .hand-area {
     display: flex;
     gap: 4px;
-    justify-content: center;
+    justify-content: flex-start;
     perspective: 1000px;
-    padding: 10px 2px 35px 2px;
+    padding: 10px 10px 45px 10px;
     /* Bottom padding for summon button */
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    height: 180px;
-    /* Increased height again */
+    height: 220px;
+    /* Increased height to accommodate summon buttons and hover scaling */
 }
 
 .hand-area::-webkit-scrollbar {
@@ -1116,6 +1116,10 @@ option {
     .battle-container {
         gap: 2px;
         padding: 3px;
+        overflow-y: auto;
+        /* Allow scrolling to see turn end */
+        height: auto;
+        min-height: 100vh;
     }
 
     .turn-indicator {
@@ -1129,9 +1133,10 @@ option {
     }
 
     .player-card {
-        width: 110px;
-        padding: 3px;
-        font-size: 0.65rem;
+        width: 100px;
+        /* More compact */
+        padding: 2px;
+        font-size: 0.6rem;
     }
 
     .center-battle-ui {
@@ -1143,6 +1148,9 @@ option {
         padding: 4px;
         font-size: 0.75rem;
         line-height: 1.2;
+        height: 5.5rem;
+        /* Approximately 4 lines plus padding */
+        overflow-y: auto;
     }
 
     .my-area {
@@ -1151,10 +1159,9 @@ option {
 
     .hand-area {
         gap: 4px;
-        padding: 10px 2px 35px 2px;
-        /* Matches desktop padding structure */
-        height: 160px;
-        /* Intermediate height */
+        padding: 10px 10px 45px 10px;
+        justify-content: flex-start;
+        height: 200px;
         min-height: auto;
         max-height: none;
     }
@@ -1193,9 +1200,9 @@ option {
 /* Extra small mobile devices */
 @media (max-width: 480px) {
     .hand-area {
-        height: 150px;
-        /* Still fairly large */
-        padding: 10px 2px 30px 2px;
+        height: 180px;
+        padding: 10px 10px 40px 10px;
+        justify-content: flex-start;
     }
 
     .card-btn {
