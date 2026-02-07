@@ -1111,6 +1111,7 @@ option {
 }
 
 /* Mobile Responsive Styles */
+/* Mobile Responsive Styles */
 @media (max-width: 768px) {
     .battle-container {
         gap: 2px;
@@ -1150,25 +1151,27 @@ option {
 
     .hand-area {
         gap: 4px;
-        padding: 5px 2px 35px 2px;
-        /* Bottom padding for summon button */
-        min-height: 90px;
-        max-height: 160px;
-        /* Increased */
+        padding: 10px 2px 35px 2px;
+        /* Matches desktop padding structure */
+        height: 160px;
+        /* Intermediate height */
+        min-height: auto;
+        max-height: none;
     }
 
     .card-btn {
-        width: 70px;
-        height: 100px;
+        width: 90px;
+        height: 130px;
         padding: 3px;
     }
 
     .card-btn img {
-        height: 30px;
+        height: 35px;
+        /* Slightly smaller than desktop but bigger than before */
     }
 
     .card-name-label {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
     }
 
     .card-power-label {
@@ -1190,17 +1193,22 @@ option {
 /* Extra small mobile devices */
 @media (max-width: 480px) {
     .hand-area {
-        min-height: 80px;
-        max-height: 140px;
-        /* Increased */
+        height: 150px;
+        /* Still fairly large */
+        padding: 10px 2px 30px 2px;
     }
 
     .card-btn {
-        width: 60px;
-        height: 85px;
+        width: 80px;
+        height: 115px;
     }
 
     .card-btn img {
-        height: 25px;
+        height: 30px;
+    }
+
+    .summon-btn-mini {
+        bottom: -20px;
+        /* Slightly tighter on small screens */
     }
 }
