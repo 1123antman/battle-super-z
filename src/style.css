@@ -168,9 +168,8 @@ option {
     height: 100vh;
     padding: 5px;
     box-sizing: border-box;
-    overflow-y: auto;
-    /* Allow scrolling if content overflows */
-    overflow-x: hidden;
+    overflow: hidden;
+    /* No scrolling for the main container */
 }
 
 .turn-indicator {
