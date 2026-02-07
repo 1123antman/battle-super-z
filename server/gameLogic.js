@@ -59,7 +59,7 @@ class GameLogic {
 
         // [NEW] Check if this card has been used before (Only for Non-basic cards)
         if (!isBasic) {
-            if (actor.usedCardIds && actor.usedCardIds.includes(cardData.id)) {
+            if (actor.usedCardIds && actor.usedCardIds.map(String).includes(String(cardData.id))) {
                 return { error: 'このカードはこのバトルで既に使用されています' };
             }
         } else {
@@ -299,7 +299,7 @@ class GameLogic {
         // Track usage (Non-basic cards)
         if (!isBasic) {
             if (!actor.usedCardIds) actor.usedCardIds = [];
-            actor.usedCardIds.push(cardData.id);
+            actor.usedCardIds.push(String(cardData.id));
         } else {
             // [NEW] Track basic action usage
             actor.usedBasicAction = true;

@@ -182,6 +182,33 @@ option {
     flex-shrink: 0;
 }
 
+.card-not-enough-energy {
+    border: 1px solid #ff4444 !important;
+    /* Red Border */
+    filter: grayscale(0.8) brightness(0.7);
+    /* Darken and desaturate */
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.card-not-enough-energy::after {
+    content: "コスト不足";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    color: #ff4444;
+    font-weight: 900;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-shadow: 0 0 5px #000;
+    border: 1px solid #ff4444;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
 .turn-indicator.my-turn {
     background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.1), transparent);
     color: var(--primary-color);
@@ -208,6 +235,33 @@ option {
     background: rgba(255, 255, 255, 0.02);
     border-radius: 6px;
     flex-shrink: 0;
+}
+
+.card-not-enough-energy {
+    border: 1px solid #ff4444 !important;
+    /* Red Border */
+    filter: grayscale(0.8) brightness(0.7);
+    /* Darken and desaturate */
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.card-not-enough-energy::after {
+    content: "コスト不足";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    color: #ff4444;
+    font-weight: 900;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-shadow: 0 0 5px #000;
+    border: 1px solid #ff4444;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
 }
 
 .player-card {
@@ -275,6 +329,33 @@ option {
     flex-shrink: 0;
 }
 
+.card-not-enough-energy {
+    border: 1px solid #ff4444 !important;
+    /* Red Border */
+    filter: grayscale(0.8) brightness(0.7);
+    /* Darken and desaturate */
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.card-not-enough-energy::after {
+    content: "コスト不足";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    color: #ff4444;
+    font-weight: 900;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-shadow: 0 0 5px #000;
+    border: 1px solid #ff4444;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
 .log-area {
     flex: 1;
     padding: 10px;
@@ -327,14 +408,16 @@ option {
     gap: 8px;
     justify-content: center;
     perspective: 1000px;
-    padding: 5px;
+    padding: 10px 5px 40px 5px;
+    /* Added bottom padding for summon button */
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     min-height: 120px;
-    max-height: 180px;
+    max-height: 200px;
+    /* Increased to fit button */
     height: auto;
 }
 
@@ -361,6 +444,33 @@ option {
     padding: 4px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     flex-shrink: 0;
+}
+
+.card-not-enough-energy {
+    border: 1px solid #ff4444 !important;
+    /* Red Border */
+    filter: grayscale(0.8) brightness(0.7);
+    /* Darken and desaturate */
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.card-not-enough-energy::after {
+    content: "コスト不足";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    color: #ff4444;
+    font-weight: 900;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-shadow: 0 0 5px #000;
+    border: 1px solid #ff4444;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
 }
 
 .card-btn:hover:not(:disabled) {
@@ -584,6 +694,33 @@ option {
     flex-shrink: 0;
 }
 
+.card-not-enough-energy {
+    border: 1px solid #ff4444 !important;
+    /* Red Border */
+    filter: grayscale(0.8) brightness(0.7);
+    /* Darken and desaturate */
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.card-not-enough-energy::after {
+    content: "コスト不足";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    color: #ff4444;
+    font-weight: 900;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-shadow: 0 0 5px #000;
+    border: 1px solid #ff4444;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
 /* Deck Editor (Simplified) */
 .deck-editor-container {
     width: 100%;
@@ -640,6 +777,8 @@ option {
     display: flex;
     gap: 5px;
     justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 5px;
 }
 
 .quick-chat button {
@@ -649,6 +788,35 @@ option {
     border: 1px solid #555;
     border-radius: 4px;
     color: #fff;
+    cursor: pointer;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 5px;
+    padding: 0 10px 5px 10px;
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 0.8rem;
+}
+
+.chat-send-btn {
+    padding: 0 12px;
+    background: var(--primary-color);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
     cursor: pointer;
 }
 
@@ -944,6 +1112,7 @@ option {
     color: #ffaa00;
     text-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
 }
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
     .battle-container {
@@ -984,9 +1153,11 @@ option {
 
     .hand-area {
         gap: 4px;
-        padding: 2px;
+        padding: 5px 2px 35px 2px;
+        /* Bottom padding for summon button */
         min-height: 90px;
-        max-height: 140px;
+        max-height: 160px;
+        /* Increased */
     }
 
     .card-btn {
@@ -1023,7 +1194,8 @@ option {
 @media (max-width: 480px) {
     .hand-area {
         min-height: 80px;
-        max-height: 120px;
+        max-height: 140px;
+        /* Increased */
     }
 
     .card-btn {

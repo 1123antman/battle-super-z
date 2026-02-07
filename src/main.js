@@ -531,7 +531,7 @@ function renderCardCreator() {
              <label>フレーバーテキスト (説明文)</label>
              <input type="text" id="card-flavor" placeholder="伝説の始まり..." maxlength="40" oninput="updatePreview()">
           </div>
-          <div class="input-group" style="align-items:flex-start">
+          <div id="skill-section" class="input-group" style="align-items:flex-start">
              <label>スキル追加 (1つまで)</label>
              <div class="skill-selector">
                 <input type="checkbox" id="skill-vampire" class="skill-checkbox" onchange="limitSkill(this); updatePreview()">
@@ -648,6 +648,13 @@ window.toggleSpecialUI = () => {
   const isSpecial = document.getElementById('is-special').value === 'special';
   document.getElementById('special-sub-group').style.display = isSpecial ? 'block' : 'none';
   document.getElementById('card-effect').parentElement.style.display = isSpecial ? 'none' : 'block';
+
+  // Hide skill section for special cards
+  const skillSection = document.getElementById('skill-section');
+  if (skillSection) {
+    skillSection.style.display = isSpecial ? 'none' : 'flex';
+  }
+
   updatePreview();
 };
 
@@ -1044,11 +1051,16 @@ window.saveCustomCard = () => {
   const font = document.getElementById('card-font').value;
 
   const skills = [];
-  if (document.getElementById('skill-vampire')?.checked) skills.push('vampire');
-  if (document.getElementById('skill-piercing')?.checked) skills.push('piercing');
-  if (document.getElementById('skill-poison')?.checked) skills.push('poison');
-  if (document.getElementById('skill-stun')?.checked) skills.push('stun');
-  if (document.getElementById('skill-twin')?.checked) skills.push('twinStrike');
+  if (isSpecial) {
+    // Special cards cannot have skills
+    skills.length = 0;
+  } else {
+    if (document.getElementById('skill-vampire')?.checked) skills.push('vampire');
+    if (document.getElementById('skill-piercing')?.checked) skills.push('piercing');
+    if (document.getElementById('skill-poison')?.checked) skills.push('poison');
+    if (document.getElementById('skill-stun')?.checked) skills.push('stun');
+    if (document.getElementById('skill-twin')?.checked) skills.push('twinStrike');
+  }
 
   try {
     const newCard = {
@@ -1105,7 +1117,9 @@ function renderBattle(gameState) {
     }
 
     // デッキ内のカードは一度使うとバトル終了まで使えない
-    const alreadyUsed = myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id);
+    const usedIds = (myPlayer.usedCardIds || []).map(id => String(id));
+    const alreadyUsed = usedIds.includes(String(card.id));
+
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
     return !isMyTurn || alreadyUsed || (myPlayer.energy < cost);
   };
@@ -1124,7 +1138,8 @@ function renderBattle(gameState) {
     .filter(card => {
       // Hide used non-basic cards
       if (!card.id.startsWith('base_')) {
-        return !(myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id));
+        const usedIds = (myPlayer.usedCardIds || []).map(id => String(id));
+        return !usedIds.includes(String(card.id));
       }
       return true;
     })
@@ -1206,9 +1221,10 @@ function renderBattle(gameState) {
     const cost = card.cost || Math.max(1, Math.floor(card.power / 5));
     const isBasic = card.id.startsWith('base_');
     const alreadyUsed = myPlayer.usedCardIds && myPlayer.usedCardIds.includes(card.id);
+    const notEnoughEnergy = myPlayer.energy < cost;
 
     return `
-      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''} ${getCardCategoryClass(card)}" onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
+      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''} ${notEnoughEnergy ? 'card-not-enough-energy' : ''} ${getCardCategoryClass(card)}" onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
         <div class="card-cost">${cost}</div>
         ${card.image ? `<img src="${card.image}">` : ''}
         <div class="card-name-label">${card.name}</div>
