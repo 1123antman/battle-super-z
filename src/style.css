@@ -194,9 +194,10 @@ option {
 
 .turn-indicator {
     text-align: center;
-    font-size: 1.1rem;
-    font-weight: 900;
-    padding: 8px;
+    font-size: 0.9rem;
+    /* Reduced from 1.1rem */
+    padding: 4px;
+    /* Reduced from 8px */
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
@@ -303,10 +304,12 @@ option {
 }
 
 .hp-bar {
-    height: 8px;
+    height: 6px;
+    /* Reduced from 8px */
     background: #000;
     border-radius: 4px;
-    margin: 8px 0;
+    margin: 4px 0;
+    /* Reduced from 8px */
     overflow: hidden;
 }
 
@@ -325,10 +328,10 @@ option {
     gap: 3px;
     /* Reduced gap */
     justify-content: center;
-    margin-top: 2px;
-    /* Reduced margin */
-    min-height: 20px;
-    /* Reduced min-height */
+    margin-top: 1px;
+    /* Further reduced from 2px */
+    min-height: 18px;
+    /* Further reduced from 20px */
 }
 
 .status-icon {
