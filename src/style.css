@@ -406,15 +406,15 @@ option {
     gap: 4px;
     justify-content: center;
     perspective: 1000px;
-    padding: 5px 2px 30px 2px;
+    padding: 10px 2px 35px 2px;
     /* Bottom padding for summon button */
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    height: 110px;
-    /* Fixed small height */
+    height: 150px;
+    /* Increased height */
 }
 
 .hand-area::-webkit-scrollbar {
@@ -427,8 +427,10 @@ option {
 }
 
 .card-btn {
-    width: 65px;
-    height: 90px;
+    width: 85px;
+    /* Increased width */
+    height: 120px;
+    /* Increased height */
     background: rgba(20, 20, 30, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
