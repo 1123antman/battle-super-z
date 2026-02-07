@@ -98,6 +98,19 @@ window.sendChat = (msg) => {
   socket.emit('chat_message', { roomId: currentRoomId, msg });
 };
 
+window.sendCustomChat = () => {
+  const input = document.getElementById('custom-chat-input');
+  if (!input) return;
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  // Basic sanitization/length limit
+  if (msg.length > 50) return alert("メッセージは50文字以内で入力してください");
+
+  sendChat(msg);
+  input.value = '';
+};
+
 socket.on('chat_received', (data) => {
   const name = data.playerName || data.playerId.slice(0, 4);
   battleLogs.push(`💬 <strong>${name}</strong>: ${data.msg}`);
