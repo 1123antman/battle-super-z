@@ -1187,10 +1187,17 @@ function renderBattle(gameState) {
 
       <div class="center-battle-ui">
         <div class="log-area" id="battle-log"></div>
+      </div>
+      
+      <div class="chat-container" style="flex-shrink: 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 8px; margin-bottom: 5px;">
         <div class="quick-chat">
            <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
            <button onclick="sendChat('強い！')">🔥 強い！</button>
            <button onclick="sendChat('参りました')">🏳️ 参りました</button>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" id="custom-chat-input" class="chat-input" placeholder="メッセージ..." onkeydown="if(event.key === 'Enter') sendCustomChat()">
+          <button class="chat-send-btn" onclick="sendCustomChat()">送信</button>
         </div>
       </div>
 
