@@ -168,7 +168,8 @@ option {
     height: 100vh;
     max-height: 100vh;
     /* Strictly limit height */
-    padding: 5px;
+    padding: 2px 5px;
+    /* Reduced vertical padding */
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -266,13 +267,16 @@ option {
 }
 
 .player-card {
-    width: 130px;
-    padding: 4px;
+    width: 120px;
+    /* Reduced width */
+    padding: 2px;
+    /* Reduced padding */
     background: #111;
     border: 1px solid #444;
     border-radius: 6px;
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    /* Smaller font */
 }
 
 .player-card.self {
@@ -300,10 +304,13 @@ option {
 /* Status Icons */
 .status-area {
     display: flex;
-    gap: 5px;
+    gap: 3px;
+    /* Reduced gap */
     justify-content: center;
-    margin-top: 5px;
-    min-height: 24px;
+    margin-top: 2px;
+    /* Reduced margin */
+    min-height: 20px;
+    /* Reduced min-height */
 }
 
 .status-icon {
@@ -325,7 +332,8 @@ option {
 .my-area {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 2px;
+    /* Reduced gap */
     flex-shrink: 0;
 }
 
@@ -406,14 +414,15 @@ option {
     gap: 4px;
     justify-content: center;
     perspective: 1000px;
-    padding: 5px 2px 30px 2px;
-    /* Compacted but enough for summon btn */
+    padding: 5px 2px 40px 2px;
+    /* Bottom padding increased for summon btn */
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    height: 175px;
+    height: 195px;
+    /* Adjusted to prevent any clipping */
 }
 
 .hand-area::-webkit-scrollbar {
@@ -775,7 +784,8 @@ option {
     gap: 5px;
     justify-content: center;
     flex-shrink: 0;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
+    /* Reduced margin */
 }
 
 .quick-chat button {
@@ -913,12 +923,15 @@ option {
 
 /* --- Battle Summon Field & Units --- */
 .summon-field {
-    margin: 4px 0;
-    padding: 4px;
+    margin: 2px 0;
+    /* Reduced margin */
+    padding: 2px;
+    /* Reduced padding */
     background: rgba(255, 255, 255, 0.03);
     border: 1px dashed rgba(255, 255, 255, 0.1);
     border-radius: 6px;
-    min-height: 60px;
+    min-height: 50px;
+    /* Reduced min-height */
     display: flex;
     justify-content: center;
     align-items: center;
