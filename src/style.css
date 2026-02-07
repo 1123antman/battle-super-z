@@ -509,7 +509,7 @@ option {
 
 .summon-btn-mini {
     position: absolute;
-    bottom: -15px;
+    bottom: -25px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--secondary-color);

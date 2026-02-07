@@ -112,6 +112,9 @@ window.sendCustomChat = () => {
 };
 
 socket.on('chat_received', (data) => {
+  // Prevent double chat (local echo + server echo)
+  if (data.playerId === socket.id) return;
+
   const name = data.playerName || data.playerId.slice(0, 4);
   battleLogs.push(`💬 <strong>${name}</strong>: ${data.msg}`);
   updateLogs();
