@@ -433,7 +433,7 @@ option {
 .hand-area {
     display: flex;
     gap: 4px;
-    justify-content: center;
+    justify-content: flex-start;
     perspective: 1000px;
     padding: 5px 2px 40px 2px;
     /* Bottom padding increased for summon btn */
