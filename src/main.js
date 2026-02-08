@@ -194,7 +194,13 @@ function setupTitleEvents() {
 
   if (btnCreate) {
     btnCreate.onclick = () => {
-      const playerName = getPlayerName();
+      // [NEW] Attempt to "unlock" speech synthesis on first click
+      speak("");
+
+      const inputName = document.getElementById('input-player-name');
+      const playerName = inputName ? inputName.value : getPlayerName();
+      if (inputName) setPlayerName(inputName.value);
+
       const myCards = getMyCards();
       socket.emit('create_room', { playerName, deckSize: myCards.length }, (response) => {
         if (response.roomId) {
@@ -229,8 +235,14 @@ function setupTitleEvents() {
 
   if (btnJoin) {
     btnJoin.onclick = () => {
+      // [NEW] Attempt to "unlock" speech synthesis on first click
+      speak("");
+
       const roomId = inputRoom.value;
-      const playerName = getPlayerName();
+      const inputName = document.getElementById('input-player-name');
+      const playerName = inputName ? inputName.value : getPlayerName();
+      if (inputName) setPlayerName(inputName.value);
+
       const myCards = getMyCards();
       if (!roomId) return alert("ルームIDを入力してください");
       socket.emit('join_room', { roomId, playerName, deckSize: myCards.length }, (response) => {
@@ -595,17 +607,7 @@ socket.on('error_message', (msg) => {
   if (lastGameState) renderBattle(lastGameState);
 });
 
-function joinRoomUI() {
-  // [NEW] Attempt to "unlock" speech synthesis on first click
-  speak("");
-
-  const roomId = document.getElementById('room-id-input').value;
-  if (roomId) {
-    socket.emit('join_room', { roomId: roomId, playerName: document.getElementById('player-name-main').value });
-  } else {
-    alert("ルームIDを入力してください。");
-  }
-}
+// Duplicate function joinRoomUI removed (IDs were mismatched)
 
 function updateLogs() {
   const logDiv = document.getElementById('battle-log');
@@ -1015,10 +1017,9 @@ window.updatePreview = () => {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  // [NEW] Attempt to "unlock" speech synthesis on first click
-  speak("");
+  // Duplicate speak("") removed as it is handled in btn handlers
 
-  const playerName = document.getElementById('player-name-main')?.value || '名無し';
+  const playerName = document.getElementById('input-player-name')?.value || getPlayerName();
   const isSpecial = document.getElementById('is-special').value === 'special';
   const nameInput = document.getElementById('card-name');
   const name = nameInput ? nameInput.value : "Card";

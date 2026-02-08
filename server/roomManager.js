@@ -33,10 +33,11 @@ class RoomManager {
         const room = this.rooms.get(roomId);
         if (!room) return { error: 'Room not found' };
 
-        // [NEW] ID Takeover Logic for Reconnection
+        // [NEW] ID Takeover Logic for Reconnection (Only during active games)
+        const isPlaying = room.gameState && room.gameState.status === 'playing';
         const existingPlayerId = Object.keys(room.playerNames).find(id => room.playerNames[id] === playerName);
 
-        if (existingPlayerId && existingPlayerId !== playerId) {
+        if (isPlaying && existingPlayerId && existingPlayerId !== playerId) {
             console.log(`[RECONNECT] Player ${playerName} taking over ID: ${existingPlayerId} -> ${playerId}`);
 
             // Update room.players list
