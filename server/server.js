@@ -9,6 +9,9 @@ import GameLogic from './gameLogic.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// [NEW] Simple in-memory leaderboard
+const globalLeaderboard = {}; // { playerName: wins }
+
 const PORT = process.env.PORT || 3000;
 const app = express();
 const httpServer = http.createServer(app);
@@ -126,9 +129,15 @@ io.on('connection', (socket) => {
             console.log(`Action in ${roomId}:`, actionResult.logs);
 
             // Check Game Over
-            const overCheck = GameLogic.checkGameOver(room.gameState);
             if (overCheck.finished) {
-                io.to(roomId).emit('game_over', { winnerId: overCheck.winnerId });
+                const winnerName = overCheck.winnerName || '名無し';
+                globalLeaderboard[winnerName] = (globalLeaderboard[winnerName] || 0) + 1;
+
+                io.to(roomId).emit('game_over', {
+                    winnerId: overCheck.winnerId,
+                    winnerName: winnerName,
+                    leaderboard: globalLeaderboard
+                });
             }
         }
     });
@@ -152,7 +161,14 @@ io.on('connection', (socket) => {
         // Check Game Over (Penalty damage might kill a player)
         const overCheck = GameLogic.checkGameOver(room.gameState);
         if (overCheck.finished) {
-            io.to(roomId).emit('game_over', { winnerId: overCheck.winnerId });
+            const winnerName = overCheck.winnerName || '名無し';
+            globalLeaderboard[winnerName] = (globalLeaderboard[winnerName] || 0) + 1;
+
+            io.to(roomId).emit('game_over', {
+                winnerId: overCheck.winnerId,
+                winnerName: winnerName,
+                leaderboard: globalLeaderboard
+            });
         }
     });
 

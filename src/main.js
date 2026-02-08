@@ -32,12 +32,66 @@ const views = {
   banner: null // [NEW] Turn banner
 };
 
-// --- Sound System ---
+// --- Audio & Voice System ---
+const audio = {
+  bgm: null,
+  isLowHp: false,
+  voiceEnabled: true
+};
+
 const playSE = (type) => {
-  // Placeholder for actual sound files
   console.log(`[SE] Playing: ${type}`);
-  // const audio = new Audio(`/sounds/${type}.mp3`);
-  // audio.play();
+  // Web Audio API Synth for common sounds to avoid missing files
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  if (type === 'attack') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+  } else if (type === 'heal') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+  } else if (type === 'turn_start') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(523, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1046, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+  } else {
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+  }
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.5);
+};
+
+const speak = (text) => {
+  if (!audio.voiceEnabled) return;
+  const uttr = new SpeechSynthesisUtterance(text);
+  uttr.lang = 'ja-JP';
+  uttr.rate = 1.2;
+  uttr.pitch = 1.0;
+  window.speechSynthesis.speak(uttr);
+};
+
+const updateBGM = (isLowHp) => {
+  if (audio.isLowHp === isLowHp) return;
+  audio.isLowHp = isLowHp;
+  console.log(`[BGM] Switching mode: ${isLowHp ? 'Pinch' : 'Normal'}`);
+  // In a real app, we would swap files or adjust filters
+  // For this demo, we'll just log it.
 };
 
 const app = document.getElementById('app');
@@ -341,24 +395,44 @@ socket.on('game_over', (data) => {
   battleLogs.push(`<div class="log-entry ${isWinner ? 'log-important' : 'log-danger'}" style="text-align:center; font-weight:bold; font-size:1.2rem; border:none; margin:10px 0">${resultText}</div>`);
   updateLogs();
   saveWinLoss(isWinner ? 'win' : 'loss');
-  showGameOver(isWinner ? 'win' : 'lose');
+  showGameOver(isWinner ? 'win' : 'lose', data.leaderboard);
 });
 
-function showGameOver(result) {
+function showGameOver(result, leaderboard) {
   const overlay = document.createElement('div');
   overlay.className = `game-over-overlay result-${result}`;
+
+  let leaderboardHTML = '';
+  if (leaderboard) {
+    const sorted = Object.entries(leaderboard).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    leaderboardHTML = `
+      <div class="leaderboard-mini" style="margin-top: 20px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 12px; font-size: 1rem;">
+        <h3 style="color: var(--accent-color); margin-bottom: 10px;">🏆 リーダーボード (Top 5)</h3>
+        ${sorted.map(([name, wins], i) => `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1)">
+            <span>${i + 1}. ${name}</span>
+            <span style="color: var(--primary-color)">${wins} 勝</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   overlay.innerHTML = `
-    <div class="game-over-title">${result === 'win' ? 'VICTORY' : 'DEFEAT'}</div>
-    <div class="game-over-subtitle">自動的にホームへ戻ります...</div>
+    <div class="game-over-content" style="text-align: center;">
+      <div class="game-over-title" style="font-size: 5rem; font-weight: 900; margin-bottom: 10px;">${result === 'win' ? 'VICTORY' : 'DEFEAT'}</div>
+      ${leaderboardHTML}
+      <div class="game-over-subtitle" style="margin-top: 20px; opacity: 0.7;">自動的にホームへ戻ります...</div>
+    </div>
   `;
   document.body.appendChild(overlay);
 
-  // Auto home after 4 seconds
+  // Auto home after 6 seconds (increased to let them see leaderboard)
   setTimeout(() => {
     overlay.remove();
     battleLogs.length = 0;
     goToHome();
-  }, 4000);
+  }, 6000);
 }
 
 const battleLogs = [];
@@ -386,6 +460,29 @@ socket.on('action_performed', (data) => {
     } else if (logsText.includes('召喚')) {
       playSE('summon');
     }
+
+    // [FLASHY] Voice production for specific actions
+    if (data.cardData && data.cardData.name) {
+      speak(`${data.cardData.name}！`);
+    }
+
+    // [NEW] Damage Popups from Logs
+    data.logs.forEach(log => {
+      const damageMatch = log.match(/(?:威力|ダメージ|ライフが)\s*(\d+)/);
+      if (damageMatch) {
+        const amount = parseInt(damageMatch[1]);
+        const isHeal = log.includes('回復');
+        // Find target in log (Player Name)
+        const playerNames = Object.values(data.gameState.players).map(p => p.playerName || p.id.slice(0, 4));
+        const targetName = playerNames.find(name => log.includes(name));
+        if (targetName) {
+          const targetPlayer = Object.values(data.gameState.players).find(p => (p.playerName || p.id.slice(0, 4)) === targetName);
+          if (targetPlayer) {
+            showDamagePopup(amount, targetPlayer.id, isHeal);
+          }
+        }
+      }
+    });
   }
 
   if (data.cardData) {
@@ -432,6 +529,23 @@ function triggerShake() {
   }
 }
 
+function showDamagePopup(amount, targetId, isHeal = false) {
+  const targetEl = document.querySelector(`[data-id="${targetId}"]`);
+  if (!targetEl) return;
+
+  const rect = targetEl.getBoundingClientRect();
+  const popup = document.createElement('div');
+  popup.className = `damage-popup ${isHeal ? 'heal-popup' : ''}`;
+  popup.innerText = (isHeal ? '+' : '-') + Math.abs(amount);
+
+  // Center of the target element
+  popup.style.left = `${rect.left + rect.width / 2}px`;
+  popup.style.top = `${rect.top + rect.height / 2}px`;
+
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 800);
+}
+
 socket.on('turn_changed', (data) => {
   console.log("Turn Changed:", data);
   isActing = false;
@@ -457,6 +571,9 @@ function showTurnBanner(text) {
   banner.classList.remove('show');
   void banner.offsetWidth; // trigger reflow
   banner.classList.add('show');
+
+  // Voice for turn start
+  speak(text);
 }
 
 socket.on('error_message', (msg) => {
@@ -500,12 +617,14 @@ function renderCardCreator() {
           <div class="input-group">
              <label>フォント (Font Customization)</label>
              <select id="card-font" onchange="updatePreview()">
-               <option value="'Noto Sans JP', sans-serif">標準 (Noto Sans)</option>
-               <option value="'Orbitron', sans-serif">SF風 (Orbitron)</option>
-               <option value="'Mochiy Pop One', sans-serif">ポップ (Mochiy Pop)</option>
-               <option value="'Cinzel', serif">エピック (Cinzel)</option>
-             </select>
-          </div>
+                <option value="'Noto Sans JP', sans-serif">標準 (Noto Sans)</option>
+                <option value="'Orbitron', sans-serif">SF風 (Orbitron)</option>
+                <option value="'Mochiy Pop One', sans-serif">ポップ (Mochiy Pop)</option>
+                <option value="'Cinzel', serif">エピック (Cinzel)</option>
+                <option value="'Press Start 2P', cursive">レトロ (Pixel)</option>
+                <option value="'Kaushan Script', cursive">筆致 (Script)</option>
+              </select>
+           </div>
           <div class="input-group">
             <label>カード名</label>
             <input type="text" id="card-name" value="マイカード" oninput="updatePreview()">
@@ -596,16 +715,22 @@ function renderCardCreator() {
                <option value="attacker">アタッカー (標準・攻撃力重視)</option>
                <option value="guardian">ガーディアン (身代わり・防御重視)</option>
                <option value="energy">エネルギー供給 (毎ターン +1 エネルギー)</option>
+               <option value="passive_atk">パッシブ攻撃 (場にいる間、自分の攻撃力 +5)</option>
+               <option value="passive_def">パッシブ防御 (場にいる間、自分の防御力 +5)</option>
              </select>
           </div>
           <div class="input-group">
              <label>フレームデザイン</label>
              <select id="card-frame" onchange="updatePreview()">
-               <option value="neon">ネオン (標準)</option>
-               <option value="gold">ゴールド (豪華)</option>
-               <option value="dark">ダーク (漆黒)</option>
-             </select>
-          </div>
+                <option value="neon">ネオン (標準)</option>
+                <option value="gold">ゴールド (豪華)</option>
+                <option value="dark">ダーク (漆黒)</option>
+                <option value="cyber">サイバー (電脳)</option>
+                <option value="blood">ブラッド (鮮血)</option>
+                <option value="holy">ホーリー (聖光)</option>
+                <option value="nature">ネイチャー (自然)</option>
+              </select>
+           </div>
           <div class="input-group">
             <label>画像ファイル (正方形推奨)</label>
             <input type="file" id="card-image" accept="image/*" onchange="handleImageUpload(this)">
@@ -954,6 +1079,10 @@ window.updatePreview = () => {
   ctx.lineWidth = 6 * scale;
   if (frame === 'gold') ctx.strokeStyle = '#ffd700';
   else if (frame === 'dark') ctx.strokeStyle = '#444';
+  else if (frame === 'cyber') ctx.strokeStyle = '#00f2ff';
+  else if (frame === 'blood') ctx.strokeStyle = '#ff0000';
+  else if (frame === 'holy') ctx.strokeStyle = '#ffffee';
+  else if (frame === 'nature') ctx.strokeStyle = '#00ff66';
   else ctx.strokeStyle = '#00ffcc';
   ctx.strokeRect(5 * scale, 5 * scale, 190 * scale, 290 * scale);
 
@@ -1018,7 +1147,13 @@ window.updatePreview = () => {
 
   // Preview Role
   const role = document.getElementById('summon-role')?.value || 'attacker';
-  const roleMap = { attacker: '🗡️ アタッカー', guardian: '🛡️ ガーディアン', energy: '🔋 エネ供給' };
+  const roleMap = {
+    attacker: '🗡️ アタッカー',
+    guardian: '🛡️ ガーディアン',
+    energy: '🔋 エネ供給',
+    passive_atk: '✨ パッシブ攻撃 (+5)',
+    passive_def: '🛡️ パッシブ防御 (+5)'
+  };
   ctx.font = `bold ${12 * scale}px Arial`;
   ctx.fillStyle = '#ffea00';
   ctx.fillText(roleMap[role], canvas.width / 2, 285 * scale, maxWidth);
@@ -1129,6 +1264,9 @@ function renderBattle(gameState) {
   const myPlayer = gameState.players[myId] || { hp: 0, energy: 0, shield: 0 };
   const isMyTurn = gameState.currentTurnPlayerId === myId;
   const opponents = Object.values(gameState.players).filter(p => p.id !== myId);
+
+  // [BGM] Check HP for dynamic music
+  updateBGM(myPlayer.hp < 30);
 
   const deckCards = getMyCards();
   const baseCards = [

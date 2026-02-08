@@ -12,18 +12,19 @@ class GameLogic {
                 hp: 100,
                 maxHp: 100,
                 shield: 0,
-                energy: 3, // [NEW] Current energy
-                maxEnergy: 10, // [NEW] Max energy cap
-                energyPerTurn: 2, // [NEW] Energy recovered each turn
-                status: [], // poison, paralysis, etc.
+                energy: 3,
+                maxEnergy: 10,
+                energyPerTurn: 2,
+                status: [],
                 handSize: 5,
                 usedEffectTypes: [],
                 field: {
                     summonedCard: null
                 },
-                usedCardIds: [], // [NEW] Track used deck cards
-                usedBasicAction: false, // [NEW] Track if basic action was used this turn
-                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] ?? 15) : 15
+                usedCardIds: [],
+                usedBasicAction: false,
+                deckSize: room.playerDeckSizes ? (room.playerDeckSizes[playerId] ?? 15) : 15,
+                passiveBonuses: { attack: 0, defense: 0 } // [NEW] Passive bonuses
             };
         });
 
@@ -122,12 +123,18 @@ class GameLogic {
             if (previouslySummoned) {
                 resultLog.push(`(以前のカード ${previouslySummoned.name} は破壊されました)`);
             }
+
+            // [NEW] Passive Bonus Calculation
+            this.recalculatePassives(actor);
+            if (actor.passiveBonuses.attack > 0 || actor.passiveBonuses.defense > 0) {
+                resultLog.push(`✨ パッシブ効果発動！攻撃+${actor.passiveBonuses.attack} / 防御+${actor.passiveBonuses.defense}`);
+            }
         } else {
             // Normal "Use" Logic
             switch (cardData.effectId) {
                 case 'attack':
                     const processAttack = (actor, target, cardData) => {
-                        let damage = parseInt(cardData.power) || 10;
+                        let damage = (parseInt(cardData.power) || 10) + (actor.passiveBonuses?.attack || 0);
                         const skills = cardData.skills || [];
                         const targetName = target.playerName || (target.id ? target.id.slice(0, 4) : 'Unknown');
 
@@ -261,7 +268,7 @@ class GameLogic {
                     break;
 
                 case 'defense':
-                    let shield = parseInt(cardData.power) || 10;
+                    let shield = (parseInt(cardData.power) || 10) + (actor.passiveBonuses?.defense || 0);
                     actor.shield += shield;
                     resultLog.push(`【防御】${actorName} がシールドを ${shield} 獲得！ (現在シールド: ${actor.shield})`);
                     break;
@@ -325,6 +332,7 @@ class GameLogic {
             if (unit.power <= 0) {
                 resultLogs.push(`💀 ${unit.name} は消滅した。`);
                 currentActor.field.summonedCard = null;
+                this.recalculatePassives(currentActor); // Recalculate on expiration
             }
         }
 
@@ -378,6 +386,16 @@ class GameLogic {
         };
     }
 
+    recalculatePassives(player) {
+        player.passiveBonuses = { attack: 0, defense: 0 };
+        if (player.field && player.field.summonedCard) {
+            const role = player.field.summonedCard.role;
+            if (role === 'passive_atk') player.passiveBonuses.attack = 5;
+            if (role === 'passive_def') player.passiveBonuses.defense = 5;
+            // You can add more complex passive calculation here
+        }
+    }
+
     checkGameOver(state) {
         const players = Object.values(state.players);
         const loser = players.find(p => p.hp <= 0);
@@ -385,7 +403,8 @@ class GameLogic {
             const winner = players.find(p => p.id !== loser.id);
             return {
                 finished: true,
-                winnerId: winner ? winner.id : null
+                winnerId: winner ? winner.id : null,
+                winnerName: winner ? winner.playerName : '名無し'
             };
         }
         return { finished: false };
