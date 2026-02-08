@@ -211,6 +211,24 @@ function setupTitleEvents() {
       });
     };
   }
+  const btnSolo = document.getElementById('btn-solo-mode');
+  if (btnSolo) {
+    btnSolo.onclick = () => {
+      speak("");
+      const inputName = document.getElementById('input-player-name');
+      const playerName = inputName ? inputName.value : getPlayerName();
+      if (inputName) setPlayerName(inputName.value);
+
+      const myCards = getMyCards();
+      socket.emit('create_solo_room', { playerName, deckSize: myCards.length }, (response) => {
+        if (response.roomId) {
+          currentRoomId = response.roomId;
+          console.log("Solo Room Created:", currentRoomId);
+          // Solo mode starts immediately, handled by server game_started
+        }
+      });
+    };
+  }
 
   if (btnRules) {
     btnRules.onclick = () => renderRules();

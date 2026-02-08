@@ -1,3 +1,5 @@
+import GameLogic, { AI_PRESETS } from './gameLogic.js';
+
 function generateRoomId() {
     // Generate 4-digit ID
     return Math.floor(1000 + Math.random() * 9000).toString();
@@ -27,6 +29,30 @@ class RoomManager {
 
         this.rooms.set(roomId, room);
         return roomId;
+    }
+
+    createSoloRoom(hostId, playerName = '名無し') {
+        const roomId = this.createRoom(hostId, playerName);
+        const room = this.rooms.get(roomId);
+        room.isSolo = true;
+
+        // Add AI Player
+        const aiId = 'ai_player_' + Math.random().toString(36).substr(2, 5);
+        room.players.push(aiId);
+        room.playerNames[aiId] = 'AI (Super-Z)';
+        if (!room.playerDeckSizes) room.playerDeckSizes = {};
+        room.playerDeckSizes[aiId] = 15; // Standard deck size
+
+        // [NEW] Generate Random AI Deck (Fisher-Yates Shuffle)
+        const pool = [...AI_PRESETS];
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        room.aiDeck = pool.slice(0, 15);
+        console.log(`[AI] Generated random deck for ${aiId} in room ${roomId}`);
+
+        return { roomId, aiId };
     }
 
     joinRoom(roomId, playerId, playerName = '名無し') {
@@ -77,8 +103,9 @@ class RoomManager {
     }
 
     getRoomIdAndState(playerId) {
-        // Inefficient search, but fine for prototype
-        for (const [id, room] of this.rooms) {
+        // [NEW] Search in reverse order to find the NEWEST room first
+        const entries = Array.from(this.rooms.entries()).reverse();
+        for (const [id, room] of entries) {
             if (room.players.includes(playerId)) {
                 return { roomId: id, room };
             }
@@ -90,15 +117,21 @@ class RoomManager {
         const result = this.getRoomIdAndState(playerId);
         if (result) {
             const { roomId, room } = result;
-            // [NEW] If game is in progress, DON'T remove the player from the list.
-            // This allows them to "Take over" their slot when they reconnect.
-            if (room.gameState && room.gameState.status === 'playing') {
+
+            // [NEW] If game is in progress AND it's not a solo room, allow slot keeping.
+            // In solo rooms, if the human host leaves, the room should die immediately.
+            const isPlaying = room.gameState && room.gameState.status === 'playing';
+            if (isPlaying && !room.isSolo) {
                 console.log(`[DISCONNECT] Player ${playerId} disconnected during game. Keeping slot.`);
                 return roomId;
             }
 
+            // Remove player from list
             room.players = room.players.filter(id => id !== playerId);
-            if (room.players.length === 0) {
+
+            // Delete room if empty or if the host of a solo game left
+            if (room.players.length === 0 || room.isSolo) {
+                console.log(`[ROOM_DELETE] Deleting room ${roomId} (Reason: ${room.isSolo ? 'Solo host left' : 'Empty'})`);
                 this.rooms.delete(roomId);
             }
             return roomId;
