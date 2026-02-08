@@ -129,6 +129,7 @@ io.on('connection', (socket) => {
             console.log(`Action in ${roomId}:`, actionResult.logs);
 
             // Check Game Over
+            const overCheck = GameLogic.checkGameOver(room.gameState);
             if (overCheck.finished) {
                 const winnerName = overCheck.winnerName || '名無し';
                 globalLeaderboard[winnerName] = (globalLeaderboard[winnerName] || 0) + 1;

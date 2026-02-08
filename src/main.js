@@ -112,6 +112,7 @@ window.goToHome = (confirmRequired = false) => {
   }
   currentRoomId = null;
   localUsedTypes = [];
+  isActing = false; // [NEW] Reset acting flag when leaving room
   battleLogs.length = 0; // Clear logs when returning home
   showView('title');
 };
@@ -439,7 +440,7 @@ const battleLogs = [];
 
 socket.on('action_performed', (data) => {
   console.log("Action performed:", data);
-  isActing = false;
+  // isActing is now reset inside renderBattle after UI update
 
   // New visual feedback
   if (data.logs && data.logs.length > 0) {
@@ -548,7 +549,7 @@ function showDamagePopup(amount, targetId, isHeal = false) {
 
 socket.on('turn_changed', (data) => {
   console.log("Turn Changed:", data);
-  isActing = false;
+  // isActing is now reset inside renderBattle after UI update
   battleLogs.push(`--- ターン交代 ---`);
   if (data.logs) battleLogs.push(...data.logs); // Add decay logs etc.
   localUsedTypes = [];
@@ -1257,6 +1258,7 @@ window.saveCustomCard = () => {
 // --- Battle Rendering ---
 
 function renderBattle(gameState) {
+  isActing = false; // [NEW] Reset acting flag ONLY after render starts
   lastGameState = gameState; // Store updated state
   const myId = socket.id;
   console.log(`[RENDER] MyID: ${myId}, Turn: ${gameState.currentTurnPlayerId}`);
