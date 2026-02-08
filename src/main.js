@@ -463,8 +463,9 @@ socket.on('action_performed', (data) => {
     }
 
     // [FLASHY] Voice production for specific actions
-    if (data.cardData && data.cardData.name) {
-      speak(`${data.cardData.name}！`);
+    if (data.cardData) {
+      const voiceText = data.cardData.voiceLine || `${data.cardData.name}！`;
+      speak(voiceText);
     }
 
     // [NEW] Damage Popups from Logs
@@ -588,6 +589,18 @@ socket.on('error_message', (msg) => {
   if (lastGameState) renderBattle(lastGameState);
 });
 
+function joinRoomUI() {
+  // [NEW] Attempt to "unlock" speech synthesis on first click
+  speak("");
+
+  const roomId = document.getElementById('room-id-input').value;
+  if (roomId) {
+    socket.emit('join_room', { roomId: roomId, playerName: document.getElementById('player-name-main').value });
+  } else {
+    alert("ルームIDを入力してください。");
+  }
+}
+
 function updateLogs() {
   const logDiv = document.getElementById('battle-log');
   if (logDiv) {
@@ -629,6 +642,10 @@ function renderCardCreator() {
           <div class="input-group">
             <label>カード名</label>
             <input type="text" id="card-name" value="マイカード" oninput="updatePreview()">
+          </div>
+          <div class="input-group">
+            <label>決め台詞 (Voice Line)</label>
+            <input type="text" id="card-voice" placeholder="例: 行くぞ！オメガ・バースト！" oninput="updatePreview()">
           </div>
           <div class="input-group">
             <label>攻撃力 / 効果値 (最大 20)</label>
@@ -992,6 +1009,10 @@ window.updatePreview = () => {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
+  // [NEW] Attempt to "unlock" speech synthesis on first click
+  speak("");
+
+  const playerName = document.getElementById('player-name-main')?.value || '名無し';
   const isSpecial = document.getElementById('is-special').value === 'special';
   const nameInput = document.getElementById('card-name');
   const name = nameInput ? nameInput.value : "Card";
@@ -1190,20 +1211,21 @@ window.saveCustomCard = () => {
     alert("カード名を入力してください");
     return;
   }
+  const voiceLine = document.getElementById('card-voice').value.trim(); // Added voiceLine
   const isSpecial = document.getElementById('is-special').value === 'special';
   const effect = isSpecial ? document.getElementById('special-behavior').value : document.getElementById('card-effect').value;
-  let power = parseInt(document.getElementById('card-power').value) || 0;
+  let atk = parseInt(document.getElementById('card-power').value) || 0; // Renamed power to atk
 
-  if (effect === 'energy_gain') power = 5;
-  else if (!['attack', 'heal', 'defense'].includes(effect)) power = 1;
+  if (effect === 'energy_gain') atk = 5;
+  else if (!['attack', 'heal', 'defense'].includes(effect)) atk = 1;
 
-  if (power > 20) power = 20;
+  if (atk > 20) atk = 20;
   const element = document.getElementById('card-element').value;
   const costInput = document.getElementById('card-cost');
-  let cost = parseInt(costInput.value) || Math.max(1, Math.floor(power / 5));
+  let cost = parseInt(costInput.value) || Math.max(1, Math.floor(atk / 5)); // Use atk for cost calculation
 
   // Power 10+ requires Cost 5+
-  if (power >= 10 && cost < 5) {
+  if (atk >= 10 && cost < 5) { // Use atk for this check
     alert("攻撃力/効果値が10以上のカードは、コストを5以上に設定する必要があります");
     if (costInput) costInput.value = 5;
     return;
@@ -1227,9 +1249,13 @@ window.saveCustomCard = () => {
   }
 
   try {
+    const cardId = 'c' + Date.now(); // Define cardId here
     const newCard = {
-      id: 'c' + Date.now(),
-      name, power, effectId: effect, element, cost, frame, vfx,
+      id: cardId,
+      name,
+      voiceLine,
+      power: atk,
+      effectId: effect, element, cost, frame, vfx,
       rarity, font,
       skills,
       flavor: document.getElementById('card-flavor')?.value || "",
@@ -1483,7 +1509,8 @@ window.playCardWithObjID = (cardId, actionType = 'use') => {
     summonRole: card.summonRole || 'attacker',
     id: card.id,
     actionType: actionType,
-    skills: card.skills || []
+    skills: card.skills || [],
+    voiceLine: card.voiceLine || ""
   });
 
   // Reset targeting
