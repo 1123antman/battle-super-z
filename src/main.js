@@ -151,6 +151,9 @@ window.sendChat = (msg) => {
   updateLogs();
 
   socket.emit('chat_message', { roomId: currentRoomId, msg });
+
+  // [NEW] Read out own message
+  speak(msg);
 };
 
 window.sendCustomChat = () => {
@@ -173,6 +176,9 @@ socket.on('chat_received', (data) => {
   const name = data.playerName || data.playerId.slice(0, 4);
   battleLogs.push(`💬 <strong>${name}</strong>: ${data.msg}`);
   updateLogs();
+
+  // [NEW] Read out received message (content only)
+  speak(data.msg);
 });
 
 // --- Title Screen Logic ---
