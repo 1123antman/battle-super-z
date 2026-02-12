@@ -227,10 +227,31 @@ class GameLogic {
                             // [NEW] Counter-attack logic: Capture power BEFORE damage
                             const preAttackPower = unit.power;
 
-                            unit.power -= damage;
+                            unit.power = Number(unit.power) - damage;
                             if (unit.power <= 0) {
+                                const overrun = Math.abs(unit.power);
                                 resultLog.push(`💥 威力 ${damage} により、${unit.name} は破壊された！`);
                                 owner.field.summonedCard = null;
+
+                                if (overrun > 0) {
+                                    resultLog.push(`⚠️ オーバーラン！ ${overrun} ダメージが ${ownerName} に波及！`);
+                                    let remDamage = overrun;
+                                    if (!isPiercing && owner.shield > 0) {
+                                        if (owner.shield >= remDamage) {
+                                            owner.shield -= remDamage;
+                                            remDamage = 0;
+                                            resultLog.push(`(シールドがオーバーランを完全に防いだ)`);
+                                        } else {
+                                            remDamage -= owner.shield;
+                                            owner.shield = 0;
+                                            resultLog.push(`(シールドを突き破った！)`);
+                                        }
+                                    }
+                                    if (remDamage > 0) {
+                                        owner.hp = Math.max(0, owner.hp - remDamage);
+                                        resultLog.push(`  → ${ownerName} に ${remDamage} ダメージ！ (残りHP: ${owner.hp})`);
+                                    }
+                                }
                             } else {
                                 resultLog.push(`🛡️ ${unit.name} は耐えたが、残存威力は ${unit.power} に減少した。`);
 

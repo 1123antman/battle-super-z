@@ -263,12 +263,10 @@ option {
 .battle-container {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    /* Reduced gap */
+    gap: 0px;
     height: 100vh;
     max-height: 100vh;
     padding: 0 5px;
-    /* Removed vertical padding entirely */
     box-sizing: border-box;
     overflow: hidden;
     margin: 0;
@@ -281,15 +279,48 @@ option {
     margin: 0;
 }
 
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+}
+
 .turn-indicator {
     text-align: center;
-    font-size: 0.9rem;
-    /* Reduced from 1.1rem */
-    padding: 4px;
-    /* Reduced from 8px */
-    border-radius: 8px;
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.05);
-    flex-shrink: 0;
+}
+
+.tts-toggle-btn {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.tts-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tts-toggle-btn.active {
+    background: rgba(0, 242, 255, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    text-shadow: 0 0 5px rgba(0, 242, 255, 0.5);
 }
 
 .card-not-enough-energy {
@@ -424,19 +455,40 @@ option {
 }
 
 .status-icon {
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
 }
 
 .center-battle-ui {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 80px;
-    /* Allow log to shrink further to fit buttons */
+    gap: 5px;
+    padding: 2px;
+    min-height: 100px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
     margin: 1px 0;
     overflow: hidden;
+}
+
+.log-area {
+    flex: 1;
+    padding: 3px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    line-height: 1.1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 5px;
+    padding: 2px;
+    flex-shrink: 0;
 }
 
 .my-area {
@@ -472,17 +524,6 @@ option {
     background: rgba(0, 0, 0, 0.7);
     border-radius: 4px;
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-}
-
-.log-area {
-    flex: 1;
-    padding: 5px;
-    overflow-y: auto;
-    font-size: 0.85rem;
-    line-height: 1.2;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
 }
 
 .log-entry {
@@ -521,18 +562,16 @@ option {
 /* Cards & Hand */
 .hand-area {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     justify-content: flex-start;
     perspective: 1000px;
     padding: 5px 2px 40px 2px;
-    /* Bottom padding increased for summon btn */
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     height: 195px;
-    /* Adjusted to prevent any clipping */
 }
 
 .hand-area::-webkit-scrollbar {
@@ -547,16 +586,16 @@ option {
 .card-btn {
     width: 100px;
     height: 145px;
-    background: rgba(20, 20, 30, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    background: rgba(20, 20, 30, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
     position: relative;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     flex-direction: column;
-    padding: 2px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    padding: 3px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     flex-shrink: 0;
     animation: cardDrawAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
 }
@@ -813,6 +852,153 @@ option {
     }
 }
 
+.shake-heavy {
+    animation: shakeHeavyAnim 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shakeHeavyAnim {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translate(-20px, 0);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translate(20px, 0);
+    }
+}
+
+/* Spark Effect */
+.vfx-spark {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 150;
+}
+
+.spark-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-color);
+    animation: sparkAnim 0.6s ease-out forwards;
+}
+
+@keyframes sparkAnim {
+    0% {
+        transform: translate(0, 0) scale(1.5);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Skill Cut-in */
+.skill-cutin-overlay {
+    position: fixed;
+    top: 40%;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 0, 230, 0.9) 25%,
+            rgba(0, 242, 255, 0.9) 75%,
+            transparent 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    transform: translateX(-100%) skewX(-20deg);
+    box-shadow: 0 0 50px rgba(0, 242, 255, 0.5);
+    pointer-events: none;
+    opacity: 0;
+}
+
+.skill-cutin-overlay.active {
+    animation: cutinAnim 2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.skill-cutin-text {
+    font-size: 3.5rem;
+    font-weight: 900;
+    font-family: 'Outfit', sans-serif;
+    color: white;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 5px 5px 0 #000;
+    transform: skewX(20deg);
+    letter-spacing: 15px;
+    white-space: nowrap;
+}
+
+@keyframes cutinAnim {
+    0% {
+        transform: translateX(-100%) skewX(-20deg);
+        opacity: 0;
+    }
+
+    15% {
+        transform: translateX(0) skewX(-20deg);
+        opacity: 1;
+    }
+
+    85% {
+        transform: translateX(0) skewX(-20deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(100%) skewX(-20deg);
+        opacity: 0;
+    }
+}
+
+/* Played Card Animation */
+.card-play-vfx {
+    animation: cardPlayCenter 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    z-index: 2000;
+}
+
+@keyframes cardPlayCenter {
+    0% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+
+    20% {
+        transform: scale(1.5) translateY(-200px);
+        box-shadow: 0 0 50px var(--primary-color);
+    }
+
+    80% {
+        transform: scale(1.5) translateY(-200px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0) translateY(-300px);
+        opacity: 0;
+    }
+}
+
 /* Card Creator Grid */
 .creator-container {
     padding: 40px;
@@ -920,23 +1106,34 @@ option {
     filter: grayscale(1);
 }
 
-.quick-chat {
-    display: flex;
-    gap: 5px;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-bottom: 2px;
-    /* Reduced margin */
+.chat-container {
+    display: none;
+    /* Hide old container as we move parts */
 }
 
-.quick-chat button {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-    background: #333;
-    border: 1px solid #555;
-    border-radius: 4px;
-    color: #fff;
+.quick-chat-row {
+    display: flex;
+    gap: 5px;
+    padding: 5px 0;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+}
+
+.quick-chat-row button {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-chat-row button:hover {
+    background: var(--primary-color);
+    color: #000;
 }
 
 .chat-input-area {
@@ -1063,45 +1260,77 @@ option {
 }
 
 /* --- Battle Summon Field & Units --- */
-.summon-field {
+/* --- Battle Field (Central Area for Summons) --- */
+.battle-field {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     margin: 2px 0;
-    /* Reduced margin */
-    padding: 2px;
-    /* Reduced padding */
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    min-height: 50px;
-    /* Reduced min-height */
+    flex-shrink: 0;
+    min-height: 125px;
+    height: 125px;
+    position: relative;
+    overflow: hidden;
+}
+
+.field-side {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 5px;
 }
 
-.summoned-unit {
-    width: 100px;
-    padding: 4px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1.5px solid rgba(255, 255, 255, 0.3);
-    border-radius: 6px;
-    text-align: center;
-    position: relative;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(5px);
-    animation: summonAppear 0.4s ease-out;
+.field-side-label {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-@keyframes summonAppear {
-    from {
-        opacity: 0;
-        transform: scale(0.5) rotate(-10deg);
-    }
+.summon-field {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
 
-    to {
-        opacity: 1;
-        transform: scale(1) rotate(0);
-    }
+.summoned-unit {
+    width: 90px;
+    padding: 4px;
+    background: rgba(20, 20, 30, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(10px);
+    animation: summonAppear 0.5s ease-out;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.summoned-unit:hover {
+    transform: translateY(-5px) scale(1.05);
+    z-index: 10;
+}
+
+.summoned-unit .unit-img {
+    width: 100%;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 2px;
+}
+
+.summoned-unit .unit-info {
+    font-size: 0.65rem;
+    font-weight: 700;
 }
 
 .summoned-unit.role-attacker {
@@ -1332,15 +1561,18 @@ option {
         font-size: 1rem;
     }
 
-    .summon-field {
-        min-height: 50px;
-        padding: 3px;
-        margin: 2px 0;
+    .battle-field {
+        min-height: 110px;
+        height: 110px;
     }
 
     .summoned-unit {
         width: 80px;
         padding: 3px;
+    }
+
+    .summoned-unit .unit-img {
+        height: 25px;
     }
 }
 

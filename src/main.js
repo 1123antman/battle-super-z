@@ -36,7 +36,7 @@ const views = {
 const audio = {
   bgm: null,
   isLowHp: false,
-  voiceEnabled: true
+  voiceEnabled: localStorage.getItem('tts_enabled') !== 'false'
 };
 
 const playSE = (type) => {
@@ -85,6 +85,16 @@ const speak = (text) => {
   uttr.pitch = 1.0;
   window.speechSynthesis.speak(uttr);
 };
+
+const toggleVoice = () => {
+  audio.voiceEnabled = !audio.voiceEnabled;
+  localStorage.setItem('tts_enabled', audio.voiceEnabled);
+  console.log(`[TTS] Voice enabled: ${audio.voiceEnabled}`);
+  if (lastGameState) {
+    window.safeRenderBattle(lastGameState);
+  }
+};
+window.toggleVoice = toggleVoice;
 
 const updateBGM = (isLowHp) => {
   if (audio.isLowHp === isLowHp) return;
@@ -392,7 +402,7 @@ socket.on('game_started', (gameState) => {
   // Total Reset for New Game
   battleLogs.length = 0;
   localUsedTypes = [];
-  lastGameState = null;
+  lastGameState = gameState;
   isActing = false;
 
   window.safeRenderBattle(gameState);
@@ -484,12 +494,16 @@ socket.on('action_performed', (data) => {
     const isAttack = logsText.includes('攻撃') || logsText.includes('💥') || logsText.includes('✨ 有効属性') || logsText.includes('💦 不利属性');
 
     if (isAttack) {
-      triggerShake();
-      const element = data.cardData.element || 'fire';
-      // Find target DOM element (simplified: apply to all opponents or the one with specific ID if we had it)
-      // For now, let's just trigger a global VFX or target-specific if we find it
-      document.querySelectorAll('.player-card.opponent').forEach(el => {
+      const element = data.cardData.element || 'none';
+      const isHeavy = (data.cardData.power >= 15);
+
+      triggerShake(isHeavy);
+
+      document.querySelectorAll('.player-card.opponent, .opponent-unit').forEach(el => {
+        // Only apply VFX to units actually mentioned in logs if possible, 
+        // but for now apply to all as a fallback visual.
         triggerVFX(element, el);
+        triggerSpark(el);
       });
       playSE('attack');
     } else if (logsText.includes('回復')) {
@@ -501,6 +515,9 @@ socket.on('action_performed', (data) => {
     // [FLASHY] Voice production for specific actions
     if (data.cardData) {
       const voiceText = data.cardData.voiceLine || `${data.cardData.name}！`;
+      if (data.cardData.power >= 18 || data.cardData.isSpecial) {
+        triggerCutin(data.cardData.name);
+      }
       speak(voiceText);
     }
 
@@ -552,18 +569,58 @@ socket.on('action_performed', (data) => {
 });
 
 function triggerVFX(type, targetEl) {
-  if (!targetEl) return;
+  if (!targetEl || type === 'none') return;
   const vfx = document.createElement('div');
   vfx.className = `vfx-layer vfx-${type}`;
   targetEl.appendChild(vfx);
   setTimeout(() => vfx.remove(), 600);
 }
 
-function triggerShake() {
+function triggerSpark(targetEl) {
+  if (!targetEl) return;
+  const container = document.createElement('div');
+  container.className = 'vfx-spark';
+  targetEl.appendChild(container);
+
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'spark-particle';
+    const tx = (Math.random() - 0.5) * 200;
+    const ty = (Math.random() - 0.5) * 200;
+    p.style.setProperty('--tx', `${tx}px`);
+    p.style.setProperty('--ty', `${ty}px`);
+    p.style.left = '50%';
+    p.style.top = '50%';
+    container.appendChild(p);
+  }
+  setTimeout(() => container.remove(), 800);
+}
+
+function triggerCutin(text) {
+  let cutin = document.querySelector('.skill-cutin-overlay');
+  if (!cutin) {
+    cutin = document.createElement('div');
+    cutin.className = 'skill-cutin-overlay';
+    const txtEl = document.createElement('div');
+    txtEl.className = 'skill-cutin-text';
+    cutin.appendChild(txtEl);
+    document.body.appendChild(cutin);
+  }
+  cutin.querySelector('.skill-cutin-text').innerText = text;
+  cutin.classList.remove('active');
+  void cutin.offsetWidth; // trigger reflow
+  cutin.classList.add('active');
+
+  playSE('skill_activation'); // Assume this SE exists or falls back
+  setTimeout(() => cutin.classList.remove('active'), 2000);
+}
+
+function triggerShake(heavy = false) {
   const battle = document.querySelector('.battle-container');
   if (battle) {
-    battle.classList.add('shake');
-    setTimeout(() => battle.classList.remove('shake'), 500);
+    const cls = heavy ? 'shake-heavy' : 'shake';
+    battle.classList.add(cls);
+    setTimeout(() => battle.classList.remove(cls), 500);
   }
 }
 
@@ -1375,7 +1432,12 @@ function renderBattle(gameState) {
 
   const html = `
     <div class="battle-container">
-      <div class="turn-indicator ${isMyTurn ? 'my-turn' : ''}">${isMyTurn ? "あなたのターン" : "相手のターン"}</div>
+      <div class="top-bar">
+        <div class="turn-indicator ${isMyTurn ? 'my-turn' : ''}">${isMyTurn ? "あなたのターン" : "相手のターン"}</div>
+        <button class="tts-toggle-btn ${audio.voiceEnabled ? 'active' : ''}" onclick="toggleVoice()">
+          ${audio.voiceEnabled ? '🔊 読み上げON' : '🔇 読み上げOFF'}
+        </button>
+      </div>
       
       <div class="opponents-row">
         ${opponents.map(p => `
@@ -1389,34 +1451,58 @@ function renderBattle(gameState) {
                ${(p.status || []).map(s => `<div class="status-icon status-${s.id}" data-duration="${s.duration}">${s.id === 'poison' ? '🤢' : '😵'}</div>`).join('')}
             </div>
             <div class="stats">HP: ${p.hp} | Shield: ${p.shield}</div>
-            <div class="summon-field">
-                 ${p.field && p.field.summonedCard ? `
-                   <div class="summoned-unit opponent-unit role-${p.field.summonedCard.role}" onclick="event.stopPropagation(); window.lastTargetId='${p.id}'; window.lastTargetType='unit'; playCardWithObjID_UNIT_CLICK()">
-                     ${p.field.summonedCard.image ? `<img src="${p.field.summonedCard.image}" class="unit-img">` : ''}
-                     <div class="unit-info">
-                       ${p.field.summonedCard.role === 'guardian' ? '🛡️' : (p.field.summonedCard.role === 'energy' ? '🔋' : '⚔️')}
-                       ${p.field.summonedCard.power} | ${p.field.summonedCard.name}
-                     </div>
-                   </div>
-                 ` : '<div class="empty-field">空きフィールド</div>'}
-            </div>
           </div>
         `).join('')}
       </div>
 
       <div class="center-battle-ui">
         <div class="log-area" id="battle-log"></div>
-      </div>
-      
-      <div class="chat-container" style="flex-shrink: 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 8px; margin-bottom: 5px;">
-        <div class="quick-chat">
-           <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
-           <button onclick="sendChat('強い！')">🔥 強い！</button>
-           <button onclick="sendChat('参りました')">🏳️ 参りました</button>
-        </div>
-        <div class="chat-input-area">
-          <input type="text" id="custom-chat-input" class="chat-input" placeholder="メッセージ..." onkeydown="if(event.key === 'Enter') sendCustomChat()">
+        <div class="chat-input-area" style="display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0;">
+          <input type="text" id="custom-chat-input" class="chat-input" style="flex: 1;" placeholder="メッセージ..." onkeydown="if(event.key === 'Enter') sendCustomChat()">
           <button class="chat-send-btn" onclick="sendCustomChat()">送信</button>
+        </div>
+      </div>
+
+      <!-- [FLASHY] Central Battle Field for Summons -->
+      <div class="battle-field">
+        <!-- Opponents Side -->
+        <div class="field-side opponent-side">
+          <div class="field-side-label">ENEMY</div>
+          <div class="summon-field">
+            ${opponents.map(p => p.field && p.field.summonedCard ? `
+               <div class="summoned-unit opponent-unit role-${p.field.summonedCard.role}" onclick="event.stopPropagation(); window.lastTargetId='${p.id}'; window.lastTargetType='unit'; playCardWithObjID_UNIT_CLICK()">
+                 ${p.field.summonedCard.image ? `<img src="${p.field.summonedCard.image}" class="unit-img">` : `
+                   <div style="width:100%; height:30px; background:#333; border-radius:4px; margin-bottom:2px; display:flex; align-items:center; justify-content:center; font-size:0.5rem; color:#666;">NO IMG</div>
+                 `}
+                 <div class="unit-info">
+                   <div style="font-size: 0.6rem; opacity: 0.6;">${p.playerName || p.id.slice(0, 4)}'s</div>
+                   ${p.field.summonedCard.role === 'guardian' ? '🛡️' : (p.field.summonedCard.role === 'energy' ? '🔋' : '⚔️')}
+                   ${p.field.summonedCard.power} | ${p.field.summonedCard.name}
+                 </div>
+               </div>
+            ` : '').join('')}
+            ${opponents.every(p => !p.field || !p.field.summonedCard) ? '<div class="empty-field">NO UNITS</div>' : ''}
+          </div>
+        </div>
+
+        <!-- VS Divider is implicit by grid gap/style -->
+
+        <!-- Player Side -->
+        <div class="field-side player-side">
+          <div class="field-side-label">You</div>
+          <div class="summon-field">
+            ${myPlayer.field && myPlayer.field.summonedCard ? `
+               <div class="summoned-unit self-unit role-${myPlayer.field.summonedCard.role}">
+                 ${myPlayer.field.summonedCard.image ? `<img src="${myPlayer.field.summonedCard.image}" class="unit-img">` : `
+                   <div style="width:100%; height:30px; background:#333; border-radius:4px; margin-bottom:2px; display:flex; align-items:center; justify-content:center; font-size:0.5rem; color:#666;">NO IMG</div>
+                 `}
+                 <div class="unit-info">
+                   ${myPlayer.field.summonedCard.role === 'guardian' ? '🛡️' : (myPlayer.field.summonedCard.role === 'energy' ? '🔋' : '⚔️')}
+                   ${myPlayer.field.summonedCard.power} | ${myPlayer.field.summonedCard.name}
+                 </div>
+               </div>
+            ` : '<div class="empty-field">NO UNITS</div>'}
+          </div>
         </div>
       </div>
 
@@ -1429,18 +1515,15 @@ function renderBattle(gameState) {
           </div>
           <div class="stats">HP: ${myPlayer.hp} | Shield: ${myPlayer.shield}</div>
           <div class="energy-display">🔋 エネルギー: ${myPlayer.energy} / ${myPlayer.maxEnergy || 10}</div>
-          <div class="summon-field">
-               ${myPlayer.field && myPlayer.field.summonedCard ? `
-                 <div class="summoned-unit self-unit role-${myPlayer.field.summonedCard.role}">
-                   ${myPlayer.field.summonedCard.image ? `<img src="${myPlayer.field.summonedCard.image}" class="unit-img">` : ''}
-                   <div class="unit-info">
-                     ${myPlayer.field.summonedCard.role === 'guardian' ? '🛡️' : (myPlayer.field.summonedCard.role === 'energy' ? '🔋' : '⚔️')}
-                     ${myPlayer.field.summonedCard.power} | ${myPlayer.field.summonedCard.name}
-                   </div>
-                 </div>
-               ` : '<div class="empty-field">空きフィールド</div>'}
-          </div>
         </div>
+        
+        <div class="quick-chat-row">
+           <button onclick="sendChat('よろしく！')">👋 よろしく！</button>
+           <button onclick="sendChat('強い！')">🔥 強い！</button>
+           <button onclick="sendChat('参りました')">🏳️ 参りました</button>
+           <button onclick="sendChat('ありがとう！')">✨ ありがとう！</button>
+        </div>
+
         <div class="hand-area">
           ${sortedHand.map(card => {
     const isDisabled = checkDisabled(card);
@@ -1450,7 +1533,9 @@ function renderBattle(gameState) {
     const notEnoughEnergy = myPlayer.energy < cost;
 
     return `
-      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''} ${notEnoughEnergy ? 'card-not-enough-energy' : ''} ${getCardCategoryClass(card)}" onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
+      <div class="card-btn glass ${isDisabled ? 'card-disabled' : ''} ${notEnoughEnergy ? 'card-not-enough-energy' : ''} ${getCardCategoryClass(card)}" 
+           data-card-id="${card.id}"
+           onclick="${isDisabled ? '' : `playCardWithObjID('${card.id}', 'use')`}">
         <div class="card-cost">${cost}</div>
         ${card.image ? `<img src="${card.image}">` : ''}
         <div class="card-name-label">${card.name}</div>
@@ -1504,6 +1589,12 @@ window.playCardWithObjID = (cardId, actionType = 'use') => {
   if (!card) return;
   if (!currentRoomId || isActing) return;
 
+  // [NEW] Trigger Play Animation
+  const cardEl = document.querySelector(`.card-btn[data-card-id="${cardId}"]`);
+  if (cardEl) {
+    cardEl.classList.add('card-play-vfx');
+  }
+
   isActing = true;
   const buttons = document.querySelectorAll('.card-btn, .summon-btn');
   buttons.forEach(btn => btn.disabled = true);
@@ -1525,8 +1616,7 @@ window.playCardWithObjID = (cardId, actionType = 'use') => {
     targetId: targetId,
     targetType: targetType,
     name: card.name,
-    // [OPTIMIZATION] Don't send heavy image data over socket to prevent freeze
-    // image: card.image, 
+    image: (actionType === 'summon') ? card.image : null,
     element: card.element || 'none',
     cost: card.cost || Math.max(1, Math.floor(card.power / 5)),
     isCustom: card.isCustom || false,
